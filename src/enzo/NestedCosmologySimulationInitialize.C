@@ -783,6 +783,10 @@ int NestedCosmologySimulationInitialize(FILE *fptr, FILE *Outfptr,
     DataLabel[i++] = DustDensityFeSilicateName;
     DataLabel[i++] = DustDensityCarbonaceousName;
   }
+  /* Grackle metal chemistry: 19 metal species (MetalChemistrySpecies.h). */
+  if (UseMetalChemistry)
+    for (int isp = 0; isp < NUM_METAL_CHEMISTRY_SPECIES; isp++)
+      DataLabel[i++] = (char *) MetalChemistrySpeciesLabels[isp];
 
   if(STARMAKE_METHOD(COLORED_POP3_STAR)){
     DataLabel[i++] = ForbidName;

@@ -123,6 +123,7 @@ int grid::NestedCosmologySimulationInitializeGrid(
     DustNum, SNeRateNum;
   int MetalCNum, MetalONum, MetalMgNum, MetalSiNum, MetalFeNum,
     DustMgNum, DustFeNum, DustCNum;
+  int MetalChemNum[NUM_METAL_CHEMISTRY_SPECIES], isp;
 
   int TF01Num, TF02Num, TF03Num, TF04Num, TF05Num, TF06Num, TF07Num, TF08Num;
 
@@ -426,13 +427,27 @@ int grid::NestedCosmologySimulationInitializeGrid(
       FieldType[DustFeNum  = NumberOfBaryonFields++] = DustDensityFeSilicate;
       FieldType[DustCNum   = NumberOfBaryonFields++] = DustDensityCarbonaceous;
     }
-    if (WritePotential)
+    /* Grackle metal chemistry: 19 metal species (MetalChemistrySpecies.h).
+       Every field group appended from here on checks the capacity before
+       it writes (CheckBaryonFieldCapacity). */
+    if (UseMetalChemistry) {
+      this->CheckBaryonFieldCapacity(NUM_METAL_CHEMISTRY_SPECIES,
+                                     "metal chemistry species");
+      for (isp = 0; isp < NUM_METAL_CHEMISTRY_SPECIES; isp++)
+        FieldType[MetalChemNum[isp] = NumberOfBaryonFields++] =
+          MetalChemistrySpeciesTypes[isp];
+    }
+    if (WritePotential) {
+      this->CheckBaryonFieldCapacity(1, "GravPotential");
       FieldType[NumberOfBaryonFields++] = GravPotential;
+    }
     if(STARMAKE_METHOD(COLORED_POP3_STAR)){
       fprintf(stderr, "Initializing Forbidden Refinement color field\n");
+      this->CheckBaryonFieldCapacity(1, "ForbiddenRefinement");
       FieldType[ForbidNum = NumberOfBaryonFields++] = ForbiddenRefinement;
     }
     if(ShockMethod){
+      this->CheckBaryonFieldCapacity(StorePreShockFields ? 3 : 1, "shock fields");
       FieldType[MachNum   = NumberOfBaryonFields++] = Mach;
       if(StorePreShockFields){
 	FieldType[PSTempNum = NumberOfBaryonFields++] = PreShockTemperature;
@@ -441,6 +456,7 @@ int grid::NestedCosmologySimulationInitializeGrid(
     }
 	if(UseTracerFluid){ /* if you add more tracer fluid fields make sure to update
 		MAX_NUMBER_OF_TRACER_FIELDS in macros_and_parameters.h */
+		this->CheckBaryonFieldCapacity(min(NumberOfTracerFluidFields, 8), "tracer fluids");
 		if(NumberOfTracerFluidFields >= 1) FieldType[TF01Num = NumberOfBaryonFields++] = TracerFluidField01Density;
 		if(NumberOfTracerFluidFields >= 2) FieldType[TF02Num = NumberOfBaryonFields++] = TracerFluidField02Density;
 		if(NumberOfTracerFluidFields >= 3) FieldType[TF03Num = NumberOfBaryonFields++] = TracerFluidField03Density;
@@ -453,6 +469,7 @@ int grid::NestedCosmologySimulationInitializeGrid(
   }
 
   if(QuantumPressure == 1){
+    this->CheckBaryonFieldCapacity(3, "FDM fields");
     FieldType[RePsiNum = NumberOfBaryonFields++] = RePsi;
     FieldType[ImPsiNum = NumberOfBaryonFields++] = ImPsi;
     FieldType[FDMDensNum = NumberOfBaryonFields++] = FDMDensity;
@@ -733,6 +750,24 @@ int grid::NestedCosmologySimulationInitializeGrid(
             BaryonField[MetalFeNum][i] = tiny_number;
           }
         }
+      }
+
+      /* Grackle metal chemistry: seed the gas-phase C, O and Si budgets as the
+         neutral atoms C I, O I and Si I from the tracked element fields and start
+         every other species at tiny_number. Grackle's make_consistent rescales
+         the C-, O- and Si-bearing species to the element totals on every call,
+         so the sums must match here; the network and the UV background then set
+         the ionization and molecular state. */
+      if (UseMetalChemistry && ReadData) {
+        for (isp = 0; isp < NUM_METAL_CHEMISTRY_SPECIES; isp++)
+          for (i = 0; i < size; i++)
+            BaryonField[MetalChemNum[isp]][i] = tiny_number;
+        if (UseMetallicityField)
+          for (i = 0; i < size; i++) {
+            BaryonField[MetalChemNum[MC_CI]][i]  = BaryonField[MetalCNum][i];
+            BaryonField[MetalChemNum[MC_OI]][i]  = BaryonField[MetalONum][i];
+            BaryonField[MetalChemNum[MC_SiI]][i] = BaryonField[MetalSiNum][i];
+          }
       }
 
 	/*  If using tracer fluids, set the field to something very small (tiny_number).

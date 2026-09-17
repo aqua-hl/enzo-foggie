@@ -651,6 +651,7 @@ int SetDefaultGlobalValues(TopGridData &MetaData)
   InitialDustToGasRatio            = 0.009387;
   UseSNeRateField                  = FALSE;
   UseDustSpeciesTrack              = FALSE;
+  UseMetalChemistry                = FALSE;
   /* Canonical MW diffuse-ISM dust split (Draine 2003) and
      COLIBRE equal-molecule Mg2SiO4/Fe2SiO4 seed split. */
   InitialDustSilicateFraction      = 0.65;

@@ -57,6 +57,23 @@ int grid::UpdateElectronDensity(void)
     for (i = 0; i < size; i++)
       BaryonField[DeNum][i] += 0.5*BaryonField[DIINum][i];
 
+  /* Grackle metal chemistry: singly ionized metal species, weighted by
+     1/mass number as in Grackle's make_consistent. */
+  if (UseMetalChemistry) {
+    int mc[NUM_METAL_CHEMISTRY_SPECIES];
+    if (IdentifyMetalChemistrySpeciesFields(mc) == FAIL)
+      ENZO_FAIL("Error in grid->IdentifyMetalChemistrySpeciesFields.\n");
+    for (i = 0; i < size; i++)
+      BaryonField[DeNum][i] +=
+        BaryonField[mc[MC_CII]][i]   / 12.0 +
+        BaryonField[mc[MC_COII]][i]  / 28.0 +
+        BaryonField[mc[MC_OII]][i]   / 16.0 +
+        BaryonField[mc[MC_OHII]][i]  / 17.0 +
+        BaryonField[mc[MC_H2OII]][i] / 18.0 +
+        BaryonField[mc[MC_H3OII]][i] / 19.0 +
+        BaryonField[mc[MC_O2II]][i]  / 32.0;
+  }
+
   return SUCCESS;
 
 }

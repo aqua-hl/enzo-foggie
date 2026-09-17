@@ -192,6 +192,7 @@ int grid::GalaxySimulationInitializeGrid(double DiskRadius,
   int MetalIINum, MetalAGBNum, MetalNSMNum, DustNum, SNeRateNum;
   int MetalCNum, MetalONum, MetalMgNum, MetalSiNum, MetalFeNum,
     DustMgNum, DustFeNum, DustCNum;
+  int MetalChemNum[NUM_METAL_CHEMISTRY_SPECIES], isp;
   int DeNum, HINum, HIINum, HeINum, HeIINum, HeIIINum, HMNum, H2INum,
     H2IINum, DINum, DIINum, HDINum, B1Num, B2Num, B3Num, PhiNum;
   double DiskDensity, DiskVelocityMag;
@@ -301,6 +302,16 @@ int grid::GalaxySimulationInitializeGrid(double DiskRadius,
     FieldType[DustMgNum  = NumberOfBaryonFields++] = DustDensityMgSilicate;
     FieldType[DustFeNum  = NumberOfBaryonFields++] = DustDensityFeSilicate;
     FieldType[DustCNum   = NumberOfBaryonFields++] = DustDensityCarbonaceous;
+  }
+  /* Grackle metal chemistry: 19 metal species (MetalChemistrySpecies.h).
+     Every field group appended from here on checks the capacity before
+     it writes (CheckBaryonFieldCapacity). */
+  if (UseMetalChemistry) {
+    this->CheckBaryonFieldCapacity(NUM_METAL_CHEMISTRY_SPECIES,
+                                   "metal chemistry species");
+    for (isp = 0; isp < NUM_METAL_CHEMISTRY_SPECIES; isp++)
+      FieldType[MetalChemNum[isp] = NumberOfBaryonFields++] =
+        MetalChemistrySpeciesTypes[isp];
   }
 
   /* Return if this doesn't concern us. */
@@ -677,6 +688,22 @@ int grid::GalaxySimulationInitializeGrid(double DiskRadius,
       BaryonField[MetalMgNum][n] = tiny_number;
       BaryonField[MetalSiNum][n] = tiny_number;
       BaryonField[MetalFeNum][n] = tiny_number;
+    }
+  }
+
+  /* Grackle metal chemistry: seed the gas-phase C, O and Si budgets as the
+     neutral atoms C I, O I and Si I from the tracked element fields and start
+     every other species at tiny_number. Grackle's make_consistent rescales
+     the C-, O- and Si-bearing species to the element totals on every call,
+     so the sums must match here; the network and the UV background then set
+     the ionization and molecular state. */
+  if (UseMetalChemistry) {
+    for (isp = 0; isp < NUM_METAL_CHEMISTRY_SPECIES; isp++)
+      BaryonField[MetalChemNum[isp]][n] = tiny_number;
+    if (UseMetallicityField) {
+      BaryonField[MetalChemNum[MC_CI]][n]  = BaryonField[MetalCNum][n];
+      BaryonField[MetalChemNum[MC_OI]][n]  = BaryonField[MetalONum][n];
+      BaryonField[MetalChemNum[MC_SiI]][n] = BaryonField[MetalSiNum][n];
     }
   }
 

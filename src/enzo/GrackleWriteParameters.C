@@ -74,6 +74,11 @@ int GrackleWriteParameters(FILE *fptr)
   fprintf(fptr, "dust_growth_clumping_factor_max = %lf\n", grackle_data->dust_growth_clumping_factor_max);
   fprintf(fptr, "dust_growth_clumping_nH_min = %lf\n", grackle_data->dust_growth_clumping_nH_min);
   fprintf(fptr, "dust_growth_clumping_nH_max = %lf\n", grackle_data->dust_growth_clumping_nH_max);
+
+  /* Grackle metal chemistry network; metal_chemistry is mapped from the
+     Enzo flag UseMetalChemistry, written by WriteParameterFile. */
+  fprintf(fptr, "metal_chemistry             = %d\n",  grackle_data->metal_chemistry);
+  fprintf(fptr, "tabulated_cooling_minimum_temperature = %lf\n", grackle_data->tabulated_cooling_minimum_temperature);
 #endif
 
 #endif

@@ -217,6 +217,11 @@ int grid::GrackleWrapper()
   /* set up grackle fields object */
   grackle_field_data my_fields;
 
+  /* NULL every field pointer first so that fields Enzo does not supply
+     (e.g. the metal species or the RT metal rates) are never left
+     uninitialized. */
+  gr_initialize_field_data(&my_fields);
+
   my_fields.grid_rank = (Eint32) GridRank;
   my_fields.grid_dimension = g_grid_dimension;
   my_fields.grid_start     = g_grid_start;
@@ -317,6 +322,33 @@ int grid::GrackleWrapper()
 
   /* Per-cell dust destruction timescale field (use_tau_dest_field = 1) — NULL if not used */
   my_fields.tau_dest  = NULL;
+
+  /* Grackle non-equilibrium metal chemistry (metal_chemistry = 1): the 19
+     metal species, in Grackle's order (MetalChemistrySpecies.h). */
+  if (UseMetalChemistry) {
+    int MetalChemNum[NUM_METAL_CHEMISTRY_SPECIES];
+    if (IdentifyMetalChemistrySpeciesFields(MetalChemNum) == FAIL)
+      ENZO_FAIL("Error in grid->IdentifyMetalChemistrySpeciesFields.\n");
+    my_fields.CI_density     = BaryonField[MetalChemNum[MC_CI]];
+    my_fields.CII_density    = BaryonField[MetalChemNum[MC_CII]];
+    my_fields.CO_density     = BaryonField[MetalChemNum[MC_CO]];
+    my_fields.CO2_density    = BaryonField[MetalChemNum[MC_CO2]];
+    my_fields.OI_density     = BaryonField[MetalChemNum[MC_OI]];
+    my_fields.OH_density     = BaryonField[MetalChemNum[MC_OH]];
+    my_fields.H2O_density    = BaryonField[MetalChemNum[MC_H2O]];
+    my_fields.O2_density     = BaryonField[MetalChemNum[MC_O2]];
+    my_fields.SiI_density    = BaryonField[MetalChemNum[MC_SiI]];
+    my_fields.SiOI_density   = BaryonField[MetalChemNum[MC_SiOI]];
+    my_fields.SiO2I_density  = BaryonField[MetalChemNum[MC_SiO2I]];
+    my_fields.CH_density     = BaryonField[MetalChemNum[MC_CH]];
+    my_fields.CH2_density    = BaryonField[MetalChemNum[MC_CH2]];
+    my_fields.COII_density   = BaryonField[MetalChemNum[MC_COII]];
+    my_fields.OII_density    = BaryonField[MetalChemNum[MC_OII]];
+    my_fields.OHII_density   = BaryonField[MetalChemNum[MC_OHII]];
+    my_fields.H2OII_density  = BaryonField[MetalChemNum[MC_H2OII]];
+    my_fields.H3OII_density  = BaryonField[MetalChemNum[MC_H3OII]];
+    my_fields.O2II_density   = BaryonField[MetalChemNum[MC_O2II]];
+  }
 #endif
 
 #ifdef TRANSFER

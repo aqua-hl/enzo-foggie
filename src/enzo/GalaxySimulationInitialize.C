@@ -608,6 +608,10 @@ int GalaxySimulationInitialize(FILE *fptr, FILE *Outfptr,
    DataLabel[count++] = DustDensityFeSilicateName;
    DataLabel[count++] = DustDensityCarbonaceousName;
  }
+ /* Grackle metal chemistry: 19 metal species (MetalChemistrySpecies.h). */
+ if (UseMetalChemistry)
+   for (int isp = 0; isp < NUM_METAL_CHEMISTRY_SPECIES; isp++)
+     DataLabel[count++] = (char *) MetalChemistrySpeciesLabels[isp];
 
  for (i = 0; i < count; i++)
    DataUnits[i] = NULL;

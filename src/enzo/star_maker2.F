@@ -491,6 +491,8 @@ c
      &                      fsil_dust, fmg_sil_dust, ffe_sil_dust,
      &                      fc_dust, dustcond,
      &                      usesnerate, sne_rate,
+     &                      usemetalchem, nmetalspec, ici, ioi, isii,
+     &                      metalspec,
      &                      usetracer, usetracerwithstarfeed,
      &                      numtracer,
      &                      tracer1, tracer2, tracer3, tracer4,
@@ -544,6 +546,13 @@ c               (energy / 1e51 erg, in cgs) is accumulated.
 c    sne_rate - per-cell count of SN-equivalent events this dt (filled
 c               when usesnerate = 1). Consumed by Grackle when
 c               UseSNeRateField = 1.
+c    usemetalchem - Grackle metal chemistry flag (0 - none, 1 - yes)
+c    nmetalspec - number of metal chemistry species in metalspec
+c    ici, ioi, isii - 1-based indices of C I, O I and Si I in metalspec
+c    metalspec - metal chemistry species fractions (rho_X/rho_gas, like
+c               metal). When usemetalchem = 1 their densities are held
+c               fixed under the ejected mass and the new gas-phase C, O
+c               and Si ejecta are added to C I, O I and Si I.
 c    imethod  - hydro method (0 - PPMDE, 1 - PPMLR, 2 - ZEUS)
 c
 c    x/y/z start - starting position of grid origin
@@ -582,9 +591,11 @@ c  Arguments
 c
       INTG_PREC nx, ny, nz, ibuff, npart, idual, imetal, imethod,
      &      distrad, diststep, distcells, iminit, usedust, usesnerate,
-     &      usedustspecies
+     &      usedustspecies, usemetalchem, nmetalspec, ici, ioi, isii
       R_PREC    d(nx,ny,nz), dust(nx,ny,nz), dm(nx,ny,nz), te(nx,ny,nz)
       R_PREC    sne_rate(nx,ny,nz)
+      R_PREC    metalspec(nx,ny,nz,nmetalspec)
+      INTG_PREC isp
       R_PREC    metalc(nx,ny,nz), metalo(nx,ny,nz), metalmg(nx,ny,nz),
      &          metalsi(nx,ny,nz), metalfe(nx,ny,nz)
       R_PREC    dustsil(nx,ny,nz), dustmg(nx,ny,nz),
@@ -747,6 +758,19 @@ c
                      if (cellstep .le. diststep) then
                         dratio = 1._RKIND/(d(ic,jc,kc) + distmass)
 c
+c           Grackle metal chemistry species are fractions here (like
+c           the primordial species) but must not inherit the ambient
+c           composition of the ejected mass: their metals are added
+c           explicitly below. Hold their densities fixed.
+c
+                        if (usemetalchem .eq. 1) then
+                           do isp = 1, nmetalspec
+                              metalspec(ic,jc,kc,isp) =
+     &                             metalspec(ic,jc,kc,isp)
+     &                             * d(ic,jc,kc) * dratio
+                           enddo
+                        endif
+c
 c           Store SN-equivalent events for Grackle dust destruction.
 c
                         if (usesnerate .eq. 1) then
@@ -813,6 +837,22 @@ c
      &                            + metalgas * fsi_metal
                               metalfe(ic,jc,kc) = metalfe(ic,jc,kc)
      &                            + metalgas * ffe_metal
+                           endif
+c
+c           Grackle metal chemistry: put the new gas-phase C, O and Si
+c           into the neutral atoms (fractions; the existing species
+c           densities were already held fixed above).
+c
+                           if (usemetalchem .eq. 1) then
+                              metalspec(ic,jc,kc,ici) =
+     &                            metalspec(ic,jc,kc,ici)
+     &                            + metalgas * fc_metal * dratio
+                              metalspec(ic,jc,kc,ioi) =
+     &                            metalspec(ic,jc,kc,ioi)
+     &                            + metalgas * fo_metal * dratio
+                              metalspec(ic,jc,kc,isii) =
+     &                            metalspec(ic,jc,kc,isii)
+     &                            + metalgas * fsi_metal * dratio
                            endif
 c
 c           Preserve the existing dust mix; seed empty cells with the

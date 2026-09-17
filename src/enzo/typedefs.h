@@ -223,7 +223,22 @@ const field_type
      use_sne_field = 1 (Li+ 2019 dust destruction). NOT a density. */
   SNeRate                 = 123,
 
-  FieldUndefined  = 124;
+  /* Grackle non-equilibrium metal chemistry (metal_chemistry = 1): the
+     19-species C/O/Si network. Eleven of the species reuse the field types
+     defined above for Simon Glover's network (CIDensity, CIIDensity,
+     OIDensity, OIIDensity, SiIDensity, CHIDensity, CH2IDensity, COIDensity,
+     OHIDensity, H2OIDensity, O2IDensity); these are the remaining eight.
+     See MetalChemistrySpecies.h for the ordered list. */
+  CO2IDensity   = 124,
+  SiOIDensity   = 125,
+  SiO2IDensity  = 126,
+  COIIDensity   = 127,
+  OHIIDensity   = 128,
+  H2OIIDensity  = 129,
+  H3OIIDensity  = 130,
+  O2IIDensity   = 131,
+
+  FieldUndefined  = 132;
 
 /*
 enum field_type {Density, TotalEnergy, InternalEnergy, Pressure,
@@ -239,6 +254,9 @@ enum field_type {Density, TotalEnergy, InternalEnergy, Pressure,
 #define FieldTypeIsDensity(A) ((((A) >= TotalEnergy && (A) <= Velocity3) || ((A) >= kphHI && (A) <= kdissH2I) || ((A) == kdissH2II) || ((A) == kphHM) || ((A) >= RadiationFreq0 && (A) <= RaySegments) || ((A) >= Bfield1 && (A) <= AccelerationField3) || ((A) == SNeRate)) ? FALSE : TRUE)
 #define FieldTypeIsRadiation(A) ((((A) >= kphHI && (A) <= kdissH2I) || ((A) == kdissH2II) || ((A) == kphHM) || ((A) >= RadiationFreq0 && (A) <= RadiationFreq9)) ? TRUE : FALSE)
 #define FieldTypeNoInterpolate(A) (((((A) >= Mach) && ((A) <= PreShockDensity)) || ((A) == GravPotential) || ((A) == RaySegments)) ? TRUE : FALSE)
+/* Species of Grackle's metal_chemistry = 1 network (the Glover range plus the
+   eight types added for Grackle); see MetalChemistrySpecies.h. */
+#define FieldTypeIsMetalChemistrySpecies(A) ((((A) >= CIDensity && (A) <= O2IDensity) || ((A) >= CO2IDensity && (A) <= O2IIDensity)) ? TRUE : FALSE)
 
 /* Different stochastic forcing types */
 const forcing_type
@@ -419,5 +437,9 @@ struct two_int {
   int grid;
   int proc;
 };
+
+/* Ordered list of the Grackle metal chemistry species (needs the field
+   types above). */
+#include "MetalChemistrySpecies.h"
 
 #endif

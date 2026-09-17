@@ -469,6 +469,15 @@ EXTERN int UseSNeRateField;
    Fe-silicate, carbonaceous). */
 EXTERN int UseDustSpeciesTrack;
 
+/* Grackle non-equilibrium metal chemistry (metal_chemistry = 1): the
+   19-species C/O/Si network, which is also where the C I / O I
+   photo-ionization and CO / OH / H2O photo-dissociation rates of the UV
+   background act. When enabled, Enzo allocates and advects the 19 species
+   fields listed in MetalChemistrySpecies.h and passes them to Grackle.
+   Requires UseDustSpeciesTrack = 1 (Grackle takes the gas-phase C, O and
+   Si budgets from the tracked element fields) and MultiSpecies >= 2. */
+EXTERN int UseMetalChemistry;
+
 /* Canonical MW diffuse-ISM split of bulk dust into species, used to seed
    the dust species fields from InitialDustToGasRatio. Draine 2003 /
    COLIBRE equal-molecule Mg2SiO4/Fe2SiO4. */

@@ -536,6 +536,8 @@ OBJS_CONFIG_LIB = \
 	Grid_HydroShockTubesInitializeGrid.o \
 	Grid_IdentifyShockSpeciesFields.o \
 	Grid_IdentifyGloverSpeciesFields.o \
+	Grid_IdentifyMetalChemistrySpeciesFields.o \
+	Grid_CheckBaryonFieldCapacity.o \
         Grid_IdentifyNewSubgrids.o \
         Grid_IdentifyNewSubgridsSmall.o \
         Grid_IdentifyPhysicalQuantities.o \

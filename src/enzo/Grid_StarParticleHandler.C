@@ -348,6 +348,8 @@ extern "C" void FORTRAN_NAME(star_feedback2)(int *nx, int *ny, int *nz,
         float *fsil_dust, float *fmg_sil_dust, float *ffe_sil_dust,
         float *fc_dust, float *dustcond,
         int *usesnerate, float *sne_rate,
+        int *usemetalchem, int *nmetalspec, int *ici, int *ioi, int *isii,
+        float *metalspec,
         int *usetracer, int *usetracerwithstarfeed, int *numtracer,
         float *tracer1, float *tracer2, float *tracer3, float *tracer4,
         float *tracer5, float *tracer6, float *tracer7, float *tracer8);
@@ -741,11 +743,14 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
  
   /* Convert the species densities into fractional densities (i.e. divide
      by total baryonic density).  At the end we will multiply by the new
-     density so that species fractions are maintained. */
+     density so that species fractions are maintained. The Grackle metal
+     chemistry species are included, so star formation removes them with
+     the gas and feedback can add ejecta to them as fractions. */
  
   for (field = 0; field < NumberOfBaryonFields; field++)
     if ((FieldType[field] >= ElectronDensity && FieldType[field] <= ExtraType1) ||
-	FieldType[field] == MetalSNIaDensity || FieldType[field] == MetalSNIIDensity)
+	FieldType[field] == MetalSNIaDensity || FieldType[field] == MetalSNIIDensity ||
+	FieldTypeIsMetalChemistrySpecies(FieldType[field]))
 #ifdef EMISSIVITY
       /* 
          it used to be set to  FieldType[field] < GravPotential if Geoffrey's Emissivity0
@@ -849,6 +854,26 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
   float *DustMgPtr  = (DustMgNum  != -1) ? BaryonField[DustMgNum]  : BaryonField[DensNum];
   float *DustFePtr  = (DustFeNum  != -1) ? BaryonField[DustFeNum]  : BaryonField[DensNum];
   float *DustCPtr   = (DustCNum   != -1) ? BaryonField[DustCNum]   : BaryonField[DensNum];
+
+  /* Grackle metal chemistry: star_feedback2 receives the 19 species (which
+     are mass fractions here, like the primordial species) packed into one
+     contiguous scratch array, so that it can hold their densities fixed
+     under the ejected mass and add the new gas-phase C, O and Si ejecta to
+     C I, O I and Si I. The array is filled just before the call and copied
+     back right after it. */
+  float *MetalChemScratch = NULL;
+  int MetalChemNum[NUM_METAL_CHEMISTRY_SPECIES];
+  int NumMetalChemSpecies = NUM_METAL_CHEMISTRY_SPECIES;
+  int MetalChemCIIndex  = MC_CI  + 1;   /* 1-based indices for Fortran */
+  int MetalChemOIIndex  = MC_OI  + 1;
+  int MetalChemSiIIndex = MC_SiI + 1;
+  if (UseMetalChemistry) {
+    if (IdentifyMetalChemistrySpeciesFields(MetalChemNum) == FAIL)
+      ENZO_FAIL("Error in grid->IdentifyMetalChemistrySpeciesFields.\n");
+    MetalChemScratch = new float[NUM_METAL_CHEMISTRY_SPECIES * size];
+  }
+  float *MetalChemPointer = (MetalChemScratch != NULL) ?
+    MetalChemScratch : BaryonField[DensNum];
 
   /* The scratch totals are refilled immediately before each Fortran call
      that reads them, because earlier calls (e.g. star_maker2 scaling the
@@ -1820,6 +1845,11 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
       float SolarMetalFracSi = SOLAR_METAL_FRACTION_SI;
       float SolarMetalFracFe = SOLAR_METAL_FRACTION_FE;
 
+      if (UseMetalChemistry)
+        for (int isp = 0; isp < NUM_METAL_CHEMISTRY_SPECIES; isp++)
+          for (i = 0; i < size; i++)
+            MetalChemScratch[isp*size + i] = BaryonField[MetalChemNum[isp]][i];
+
       FORTRAN_NAME(star_feedback2)(
        GridDimension, GridDimension+1, GridDimension+2,
           BaryonField[DensNum], DustPointer, dmfield,
@@ -1854,9 +1884,17 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
        &InitialDustCarbonaceousFraction,
        &DustCondensationEfficiency,
        &UseSNeRateField, SNeRatePointer,
+       &UseMetalChemistry, &NumMetalChemSpecies,
+       &MetalChemCIIndex, &MetalChemOIIndex, &MetalChemSiIIndex,
+       MetalChemPointer,
        &UseTracerFluid, &UseTracerFluidWithStellarFeedback, &NumberOfTracerFluidFields,
        TracerFluid01Pointer, TracerFluid02Pointer, TracerFluid03Pointer, TracerFluid04Pointer,
        TracerFluid05Pointer, TracerFluid06Pointer, TracerFluid07Pointer, TracerFluid08Pointer);
+
+      if (UseMetalChemistry)
+        for (int isp = 0; isp < NUM_METAL_CHEMISTRY_SPECIES; isp++)
+          for (i = 0; i < size; i++)
+            BaryonField[MetalChemNum[isp]][i] = MetalChemScratch[isp*size + i];
    }
   } // end: if NORMAL_STAR
  
@@ -2432,7 +2470,8 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
  
   for (field = 0; field < NumberOfBaryonFields; field++) {
     if ((FieldType[field] >= ElectronDensity && FieldType[field] <= ExtraType1) ||
-	FieldType[field] == MetalSNIaDensity || FieldType[field] == MetalSNIIDensity) {
+	FieldType[field] == MetalSNIaDensity || FieldType[field] == MetalSNIIDensity ||
+	FieldTypeIsMetalChemistrySpecies(FieldType[field])) {
 #ifdef EMISSIVITY
       /* 
          it used to be set to  FieldType[field] < GravPotential if Geoffrey's Emissivity0
@@ -2460,6 +2499,7 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
   delete [] dmfield;
   delete [] DustTotalScratch;
   delete [] DustSilScratch;
+  delete [] MetalChemScratch;
   delete [] BaryonField[NumberOfBaryonFields];   // refinement flag field
   BaryonField[NumberOfBaryonFields] = NULL;
  

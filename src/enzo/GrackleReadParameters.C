@@ -98,12 +98,16 @@ int GrackleReadParameters(FILE *fptr, FLOAT InitTime)
      setting up grackle_units */
 
   if (use_grackle == FALSE) {
+    if (UseMetalChemistry) {
+      ENZO_FAIL("UseMetalChemistry = 1 requires use_grackle = 1.\n");
+    }
     return SUCCESS;
   }
 
   char line[MAX_LINE_LENGTH];
   char *dummy = new char[MAX_LINE_LENGTH];
   dummy[0] = 0;
+  Eint32 FileMetalChemistry = -1;   /* %d target: Enzo's int is 64-bit in integers-64 builds */
 
 
 #ifdef USE_GRACKLE
@@ -197,6 +201,14 @@ int GrackleReadParameters(FILE *fptr, FLOAT InitTime)
                   &grackle_data->dust_growth_clumping_nH_min);
     ret += sscanf(line, "dust_growth_clumping_nH_max = %lf",
                   &grackle_data->dust_growth_clumping_nH_max);
+
+    /* Grackle non-equilibrium metal chemistry. metal_chemistry itself is
+       mapped from the Enzo flag UseMetalChemistry below, because Enzo has
+       to allocate the 19 species fields; a bare metal_chemistry line is
+       read only so that a mismatch can be reported. */
+    ret += sscanf(line, "metal_chemistry = %d", &FileMetalChemistry);
+    ret += sscanf(line, "tabulated_cooling_minimum_temperature = %lf",
+                  &grackle_data->tabulated_cooling_minimum_temperature);
 #endif
 
     /* If the dummy char space was used, then make another. */
@@ -249,6 +261,7 @@ int GrackleReadParameters(FILE *fptr, FLOAT InitTime)
 #ifdef GRACKLE_NEW_DUST_MODEL
   grackle_data->dust_species_track             = (Eint32) UseDustSpeciesTrack;
   grackle_data->use_sne_field                  = (Eint32) UseSNeRateField;
+  grackle_data->metal_chemistry                = (Eint32) UseMetalChemistry;
   /* Single knob for the Mg/Fe silicate split: Grackle's fallback split must
      match the split Enzo uses to seed dust species in ICs and feedback. */
   grackle_data->dust_silicate_mg_fraction      = (double) InitialDustMgSilicateFraction;
@@ -275,6 +288,31 @@ int GrackleReadParameters(FILE *fptr, FLOAT InitTime)
     }
   }
 #endif
+
+  /* Grackle metal chemistry: the species fields are allocated by Enzo, so
+     the network is switched on with UseMetalChemistry rather than with the
+     Grackle parameter. The network needs the tabulated metal cooling above
+     ~1e4 K, H2 (it contains H2 reactions), and the tracked gas-phase C, O
+     and Si element fields from which Grackle re-derives the species sums. */
+  if (FileMetalChemistry > 0 && !UseMetalChemistry) {
+    ENZO_FAIL("metal_chemistry is set from the Enzo flag UseMetalChemistry; "
+              "use UseMetalChemistry = 1 instead of metal_chemistry = 1.\n");
+  }
+  if (UseMetalChemistry) {
+    if (!MetalCooling) {
+      ENZO_FAIL("UseMetalChemistry = 1 requires MetalCooling = 1.\n");
+    }
+    if (!UseDustSpeciesTrack) {
+      ENZO_FAIL("UseMetalChemistry = 1 requires UseDustSpeciesTrack = 1.\n");
+    }
+    if (MultiSpecies < 2) {
+      ENZO_FAIL("UseMetalChemistry = 1 requires MultiSpecies >= 2.\n");
+    }
+    if (GloverChemistryModel || TestProblemData.GloverChemistryModel) {
+      ENZO_FAIL("UseMetalChemistry = 1 cannot be combined with "
+                "GloverChemistryModel (the species fields are shared).\n");
+    }
+  }
 
   if (grackle_data->use_dust_density_field && !UseDustDensityField) {
     ENZO_FAIL("use_dust_density_field = 1 requires UseDustDensityField = 1.\n");

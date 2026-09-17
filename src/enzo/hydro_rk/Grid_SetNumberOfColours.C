@@ -81,6 +81,16 @@ int grid::SetNumberOfColours(void)
     if (FindField(DustDensityFeSilicate,  FieldType, NumberOfBaryonFields) != -1) _nc++;
     if (FindField(DustDensityCarbonaceous,FieldType, NumberOfBaryonFields) != -1) _nc++;
   }
+
+  /* Grackle metal chemistry: 19 metal species (all must be present). */
+  if (UseMetalChemistry) {
+    int MetalChemNum[NUM_METAL_CHEMISTRY_SPECIES];
+    if (IdentifyMetalChemistrySpeciesFields(MetalChemNum) == FAIL) {
+      fprintf(stderr, "Error in grid->IdentifyMetalChemistrySpeciesFields.\n");
+      return FAIL;
+    }
+    _nc += NUM_METAL_CHEMISTRY_SPECIES;
+  }
   /*   //##### These fields are currently not being used and only causing interpolation problems
   if (MBHColourNum     != -1) _nc++;
   if (Galaxy1ColourNum != -1) _nc++;

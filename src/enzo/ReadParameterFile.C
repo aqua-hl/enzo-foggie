@@ -1189,6 +1189,7 @@ int ReadParameterFile(FILE *fptr, TopGridData &MetaData, float *Initialdt)
     ret += sscanf(line, "InitialDustToGasRatio = %"FSYM, &InitialDustToGasRatio);
     ret += sscanf(line, "UseSNeRateField = %"ISYM, &UseSNeRateField);
     ret += sscanf(line, "UseDustSpeciesTrack = %"ISYM, &UseDustSpeciesTrack);
+    ret += sscanf(line, "UseMetalChemistry = %"ISYM, &UseMetalChemistry);
     ret += sscanf(line, "InitialDustSilicateFraction = %"FSYM, &InitialDustSilicateFraction);
     ret += sscanf(line, "InitialDustMgSilicateFraction = %"FSYM, &InitialDustMgSilicateFraction);
     ret += sscanf(line, "InitialDustFeSilicateFraction = %"FSYM, &InitialDustFeSilicateFraction);

@@ -164,6 +164,15 @@ int grid::ReturnHydroRKPointers(float **Prim, bool ReturnMassFractions)
     if (DustFeNum  != -1) Prim[nfield++] = BaryonField[DustFeNum];
     if (DustCNum   != -1) Prim[nfield++] = BaryonField[DustCNum];
   }
+
+  /* Grackle metal chemistry: 19 metal species advected as colours. */
+  if (UseMetalChemistry) {
+    int MetalChemNum[NUM_METAL_CHEMISTRY_SPECIES];
+    if (IdentifyMetalChemistrySpeciesFields(MetalChemNum) == FAIL)
+      ENZO_FAIL("Error in grid->IdentifyMetalChemistrySpeciesFields.\n");
+    for (int isp = 0; isp < NUM_METAL_CHEMISTRY_SPECIES; isp++)
+      Prim[nfield++] = BaryonField[MetalChemNum[isp]];
+  }
   /*   //##### These fields are currently not being used and only causing interpolation problems
   if (MBHColourNum     != -1) Prim[nfield++] = BaryonField[MBHColourNum];
   if (Galaxy1ColourNum != -1) Prim[nfield++] = BaryonField[Galaxy1ColourNum];

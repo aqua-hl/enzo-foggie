@@ -1873,6 +1873,15 @@ int TransferSubgridActiveParticles(grid* Subgrids[], int NumberOfSubgrids,
 				  int &HCOIINum,int &OHINum,int &H2OINum,
 				  int &O2INum);
 
+  /* Identify the Grackle metal_chemistry species fields, in the order of
+     MetalChemistrySpecies.h. Fails if UseMetalChemistry is set and any is
+     missing. */
+  int IdentifyMetalChemistrySpeciesFields(int SpeciesNum[NUM_METAL_CHEMISTRY_SPECIES]);
+
+  /* Fail before FieldType/BaryonField would be written past
+     MAX_NUMBER_OF_BARYON_FIELDS (one slot is reserved for scratch use). */
+  int CheckBaryonFieldCapacity(int NumberToAdd, const char *Description);
+
   /* Identify tracer fluid fields */
   int IdentifyTracerFluidFields(int &TracerFluidField01Num, int &TracerFluidField02Num,
 			        int &TracerFluidField03Num, int &TracerFluidField04Num,

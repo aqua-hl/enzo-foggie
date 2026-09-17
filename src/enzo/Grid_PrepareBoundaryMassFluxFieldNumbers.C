@@ -125,5 +125,14 @@ int grid::PrepareBoundaryMassFluxFieldNumbers(){
     if (DustCNum   != -1) BoundaryMassFluxFieldNumbers[count++] = DustCNum;
   }
 
+  /* Grackle metal chemistry: 19 metal species advected as colours. */
+  if (UseMetalChemistry) {
+    int MetalChemNum[NUM_METAL_CHEMISTRY_SPECIES];
+    if (IdentifyMetalChemistrySpeciesFields(MetalChemNum) == FAIL)
+      ENZO_FAIL("Error in grid->IdentifyMetalChemistrySpeciesFields.\n");
+    for (int isp = 0; isp < NUM_METAL_CHEMISTRY_SPECIES; isp++)
+      BoundaryMassFluxFieldNumbers[count++] = MetalChemNum[isp];
+  }
+
   return SUCCESS;
 }

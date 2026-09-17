@@ -217,6 +217,20 @@ int grid::SolveHydroEquations(int CycleNumber, int NumberOfSubgrids,
       if (DustFeNum_  != -1) colnum[NumberOfColours++] = DustFeNum_;
       if (DustCNum_   != -1) colnum[NumberOfColours++] = DustCNum_;
     }
+
+    /* Grackle metal chemistry: 19 metal species advected as colours. */
+    if (UseMetalChemistry) {
+      int MetalChemNum[NUM_METAL_CHEMISTRY_SPECIES];
+      if (IdentifyMetalChemistrySpeciesFields(MetalChemNum) == FAIL)
+        ENZO_FAIL("Error in grid->IdentifyMetalChemistrySpeciesFields.\n");
+      if (NumberOfColours + NUM_METAL_CHEMISTRY_SPECIES > MAX_COLOR) {
+        ENZO_VFAIL("Too many colour fields: %"ISYM" registered + %"ISYM" metal "
+                   "chemistry species > MAX_COLOR = %"ISYM" (fortran.def).\n",
+                   NumberOfColours, (int) NUM_METAL_CHEMISTRY_SPECIES, (int) MAX_COLOR)
+      }
+      for (int isp = 0; isp < NUM_METAL_CHEMISTRY_SPECIES; isp++)
+        colnum[NumberOfColours++] = MetalChemNum[isp];
+    }
     //if (MetalAGBNum      != -1) colnum[NumberOfColours++] = MetalAGBNum;
     //if (MetalNSMNum      != -1) colnum[NumberOfColours++] = MetalNSMNum;
 
@@ -326,6 +340,14 @@ int grid::SolveHydroEquations(int CycleNumber, int NumberOfSubgrids,
 	colnum[NumberOfColours++] = PSDenNum;
       }
     }
+
+    /* colnum (and the Fortran colour work arrays) hold MAX_COLOR entries. */
+    if (NumberOfColours > MAX_COLOR) {
+      ENZO_VFAIL("NumberOfColours = %"ISYM" exceeds MAX_COLOR = %"ISYM" "
+                 "(fortran.def); raise MAX_COLOR.\n",
+                 NumberOfColours, (int) MAX_COLOR)
+    }
+
     /* Determine if Gamma should be a scalar or a field. */
     
     int UseGammaField = FALSE;

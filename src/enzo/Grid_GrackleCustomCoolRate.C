@@ -133,6 +133,18 @@ int grid::GrackleCustomCoolRate(int rank, int *dim, float *cool_rate,
   /* set up the my_fields */
   grackle_field_data my_fields;
 
+  /* NULL every field pointer first so that fields Enzo does not supply
+     (e.g. the metal species or the RT metal rates) are never left
+     uninitialized. */
+  gr_initialize_field_data(&my_fields);
+
+  /* This routine builds Grackle fields from the caller's scalar arrays and
+     does not supply the metal chemistry species, which Grackle would
+     dereference with metal_chemistry = 1. */
+  if (UseMetalChemistry)
+    ENZO_FAIL("GrackleCustomCoolRate (GalaxySimulationGasHalo = 6) does not "
+              "support UseMetalChemistry = 1.\n");
+
   my_fields.grid_rank = (Eint32) rank;
   my_fields.grid_dimension = g_grid_dimension;
   my_fields.grid_start     = g_grid_start;

@@ -1006,6 +1006,8 @@ int WriteParameterFile(FILE *fptr, TopGridData &MetaData, char *name = NULL)
           UseSNeRateField);
   fprintf(fptr, "UseDustSpeciesTrack                   = %"ISYM"\n",
           UseDustSpeciesTrack);
+  fprintf(fptr, "UseMetalChemistry                     = %"ISYM"\n",
+          UseMetalChemistry);
   fprintf(fptr, "InitialDustSilicateFraction           = %"FSYM"\n",
           InitialDustSilicateFraction);
   fprintf(fptr, "InitialDustMgSilicateFraction         = %"FSYM"\n",
