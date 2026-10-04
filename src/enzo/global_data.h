@@ -457,10 +457,10 @@ EXTERN int MultiMetals;
 EXTERN int UseDustDensityField;
 EXTERN float InitialDustToGasRatio;
 
-/* Per-cell SN-event count field (BaryonField with FieldType SNeRate).
+/* SN-event field (BaryonField with FieldType SNeRate).
    Populated each timestep by star_feedback2; consumed by Grackle when
-   use_sne_field = 1 (Li+ 2019 dust destruction). Units: SNe per cell
-   per dt. */
+   use_sne_field = 1 (Li+ 2019 dust destruction). Units: SNe per code
+   volume per dt. */
 EXTERN int UseSNeRateField;
 
 /* Species-resolved dust tracking (dust_species_track = 1 in Grackle).

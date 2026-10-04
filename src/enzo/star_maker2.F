@@ -539,13 +539,14 @@ c    fsil_dust  - canonical MW silicate (Mg+Fe) fraction of total dust.
 c    fmg_sil_dust, ffe_sil_dust - Mg/Fe split within the silicate fraction.
 c    fc_dust    - canonical MW carbonaceous fraction of total dust.
 c    dustcond   - fraction of new metal ejecta condensed into dust
-c    usesnerate - SN-event count field flag (0 - none, 1 - yes). When on,
+c    usesnerate - SN-event field flag (0 - none, 1 - yes). When on,
 c               sne_rate is zeroed at the top of the routine and each
-c               particle's per-cell SN-equivalent energy contribution
-c               (energy / 1e51 erg, in cgs) is accumulated.
-c    sne_rate - per-cell count of SN-equivalent events this dt (filled
-c               when usesnerate = 1). Consumed by Grackle when
-c               UseSNeRateField = 1.
+c               particle's SN-equivalent energy contribution to a cell
+c               (energy / 1e51 erg, in cgs) is accumulated per code volume.
+c    sne_rate - SN-equivalent events per code volume this dt (the cell
+c               count divided by dx**3), which is what Grackle's SN
+c               dust destruction expects. Filled when usesnerate = 1 and
+c               consumed by Grackle when UseSNeRateField = 1.
 c    usemetalchem - Grackle metal chemistry flag (0 - none, 1 - yes)
 c    nmetalspec - number of metal chemistry species in metalspec
 c    ici, ioi, isii - 1-based indices of C I, O I and Si I in metalspec
@@ -635,7 +636,7 @@ c     Floor for seeding dust species in cells with no existing dust.
 c
 c-----------------------------------------------------------------------
 c
-c     Clear the SN-event count field for this feedback pass.
+c     Clear the SN-event field for this feedback pass.
 c
       if (usesnerate .eq. 1) then
          do k=1,nz
@@ -771,11 +772,13 @@ c
                            enddo
                         endif
 c
-c           Store SN-equivalent events for Grackle dust destruction.
+c           Store SN-equivalent events per code volume for Grackle dust
+c           destruction: energy*d1*v1**2 is erg/cm^3, so multiplying by
+c           x1**3 (not (dx*x1)**3) gives events per code volume.
 c
                         if (usesnerate .eq. 1) then
                            sne_rate(ic,jc,kc) = sne_rate(ic,jc,kc) +
-     &                          energy * d1 * v1**2 * (dx*x1)**3 /
+     &                          energy * d1 * v1**2 * x1**3 /
      &                          10._RKIND**51._RKIND
                         endif
                         if( crmodel .gt. 0 ) then

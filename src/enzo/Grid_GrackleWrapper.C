@@ -309,8 +309,8 @@ int grid::GrackleWrapper()
   my_fields.specific_heating_rate   = specific_heating_rate;
 
 #ifdef GRACKLE_NEW_DUST_MODEL
-  /* Per-cell SN rate field (use_sne_field = 1). The
-     field is populated by star_feedback2 each timestep as SNe-per-cell. */
+  /* SN rate field (use_sne_field = 1). The field is populated by
+     star_feedback2 each timestep as SNe per code volume. */
   if (UseSNeRateField) {
     int SNeRateNum = FindField(SNeRate, FieldType, NumberOfBaryonFields);
     if (SNeRateNum == -1)
