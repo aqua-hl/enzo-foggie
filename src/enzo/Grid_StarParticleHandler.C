@@ -347,6 +347,8 @@ extern "C" void FORTRAN_NAME(star_feedback2)(int *nx, int *ny, int *nz,
         float *fsi_metal, float *ffe_metal,
         float *fsil_dust, float *fmg_sil_dust, float *ffe_sil_dust,
         float *fc_dust, float *dustcond,
+        float *fmgsil_mg, float *fmgsil_fe, float *fmgsil_si, float *fmgsil_o,
+        float *ffesil_mg, float *ffesil_fe, float *ffesil_si, float *ffesil_o,
         int *usesnerate, float *sne_rate,
         int *usemetalchem, int *nmetalspec, int *ici, int *ioi, int *isii,
         float *metalspec,
@@ -1823,9 +1825,23 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
         BaryonField[SNeRateNum] : BaryonField[DensNum];
 
       float DustCondensationEfficiency = 0.15;
+      /* Element mass fractions (Mg, Fe, Si, O) of Mg-silicate (Mg2SiO4)
+         and Fe-silicate (Fe2SiO4), the same ones Grackle's grain growth
+         uses, so the gas gives up exactly the elements that condense
+         into SN dust. */
+      float MgSilicateFrac[4] = {0.345521, 0.0, 0.199630, 0.454849};
+      float FeSilicateFrac[4] = {0.0, 0.548111, 0.137825, 0.314064};
 #if defined(USE_GRACKLE) && defined(GRACKLE_NEW_DUST_MODEL)
       DustCondensationEfficiency =
         (float) grackle_data->dust_condensation_eff;
+      MgSilicateFrac[0] = (float) grackle_data->dust_mg_silicate_f_Mg;
+      MgSilicateFrac[1] = (float) grackle_data->dust_mg_silicate_f_Fe;
+      MgSilicateFrac[2] = (float) grackle_data->dust_mg_silicate_f_Si;
+      MgSilicateFrac[3] = (float) grackle_data->dust_mg_silicate_f_O;
+      FeSilicateFrac[0] = (float) grackle_data->dust_fe_silicate_f_Mg;
+      FeSilicateFrac[1] = (float) grackle_data->dust_fe_silicate_f_Fe;
+      FeSilicateFrac[2] = (float) grackle_data->dust_fe_silicate_f_Si;
+      FeSilicateFrac[3] = (float) grackle_data->dust_fe_silicate_f_O;
 #endif
 
       /* Refill the scratch dust totals: star_maker2 above scales the
@@ -1883,6 +1899,10 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
        &InitialDustFeSilicateFraction,
        &InitialDustCarbonaceousFraction,
        &DustCondensationEfficiency,
+       &MgSilicateFrac[0], &MgSilicateFrac[1],
+       &MgSilicateFrac[2], &MgSilicateFrac[3],
+       &FeSilicateFrac[0], &FeSilicateFrac[1],
+       &FeSilicateFrac[2], &FeSilicateFrac[3],
        &UseSNeRateField, SNeRatePointer,
        &UseMetalChemistry, &NumMetalChemSpecies,
        &MetalChemCIIndex, &MetalChemOIIndex, &MetalChemSiIIndex,

@@ -490,6 +490,8 @@ c
      &                      ffe_metal,
      &                      fsil_dust, fmg_sil_dust, ffe_sil_dust,
      &                      fc_dust, dustcond,
+     &                      fmgsil_mg, fmgsil_fe, fmgsil_si, fmgsil_o,
+     &                      ffesil_mg, ffesil_fe, ffesil_si, ffesil_o,
      &                      usesnerate, sne_rate,
      &                      usemetalchem, nmetalspec, ici, ioi, isii,
      &                      metalspec,
@@ -539,6 +541,13 @@ c    fsil_dust  - canonical MW silicate (Mg+Fe) fraction of total dust.
 c    fmg_sil_dust, ffe_sil_dust - Mg/Fe split within the silicate fraction.
 c    fc_dust    - canonical MW carbonaceous fraction of total dust.
 c    dustcond   - fraction of new metal ejecta condensed into dust
+c               (less in a cell whose ejecta lack an element its dust
+c               mix needs)
+c    fmgsil_mg..fmgsil_o, ffesil_mg..ffesil_o - Mg, Fe, Si and O mass
+c               fractions of Mg-silicate and Fe-silicate (Grackle's
+c               dust_mg_silicate_f_* and dust_fe_silicate_f_*). The
+c               new dust's C, O, Mg, Si and Fe come out of the same
+c               elements of the ejecta.
 c    usesnerate - SN-event field flag (0 - none, 1 - yes). When on,
 c               sne_rate is zeroed at the top of the routine and each
 c               particle's SN-equivalent energy contribution to a cell
@@ -604,6 +613,8 @@ c
       R_PREC    fc_metal, fo_metal, fmg_metal, fsi_metal, ffe_metal
       R_PREC    fsil_dust, fmg_sil_dust, ffe_sil_dust, fc_dust
       R_PREC    dustcond
+      R_PREC    fmgsil_mg, fmgsil_fe, fmgsil_si, fmgsil_o,
+     &          ffesil_mg, ffesil_fe, ffesil_si, ffesil_o
       R_PREC    u(nx,ny,nz), v(nx,ny,nz), w(nx,ny,nz)
       R_PREC    r(nx,ny,nz), metal(nx,ny,nz), ge(nx,ny,nz)
       R_PREC    dt, dx, z
@@ -629,6 +640,8 @@ c
       R_PREC mform, tfactor, energy, sn_param, msolar_e51,
      &     m_eject, yield, minitial, xv1, xv2, dratio,
      &     distmass, dmetal, metalgas, dustadd, olddust, dustscale
+      R_PREC xmg, xfe, xc, gdc, gdo, gdmg, gdsi, gdfe,
+     &     ejc, ejo, ejmg, ejsi, ejfe
       R_PREC dustfloor
       parameter (msolar_e51 = 1800._RKIND)
 c     Floor for seeding dust species in cells with no existing dust.
@@ -811,35 +824,90 @@ c
      &                          (yield * (1._RKIND-metalf(n)) +
      &                          m_eject * metalf(n))
                            if (usedust .eq. 1) then
-                              metalgas = (1._RKIND - dustcond)*dmetal
                               dustadd = dustcond*dmetal
                               olddust = dust(ic,jc,kc)
-                              metal(ic,jc,kc) =
-     &                             (metal(ic,jc,kc)*d(ic,jc,kc) +
-     &                             metalgas) * dratio
-                              dust(ic,jc,kc) = olddust + dustadd
                            else
-                              metalgas = dmetal
                               dustadd = 0._RKIND
                               olddust = 0._RKIND
-                              metal(ic,jc,kc) =
-     &                             (metal(ic,jc,kc)*d(ic,jc,kc) +
-     &                             metalgas) * dratio
                            endif
+c
+c           Element mass fractions (gd*) of the new dust. With species-
+c           resolved dust it copies the cell's dust mix (Mg-silicate
+c           xmg, Fe-silicate xfe, carbon xc), or the fiducial split in
+c           a cell with no dust yet, and its C, O, Mg, Si and Fe come
+c           out of the same elements of the ejecta: gas plus dust keeps
+c           the ejecta's composition element by element, and the
+c           untracked metals (N, Ne, S, ...) all stay in the gas. If
+c           the ejecta lack an element that mix needs, less dust forms.
+c           Bulk dust has no composition, so it takes an even share of
+c           every element.
+c
+                           if (usedustspecies .eq. 1 .and.
+     &                         usedust .eq. 1) then
+                              if (olddust .gt. dustfloor) then
+                                 xmg = dustmg(ic,jc,kc) / olddust
+                                 xfe = dustfe(ic,jc,kc) / olddust
+                                 xc  = dustc(ic,jc,kc)  / olddust
+                              else
+                                 xmg = fsil_dust * fmg_sil_dust
+                                 xfe = fsil_dust * ffe_sil_dust
+                                 xc  = fc_dust
+                              endif
+                              gdc  = xc
+                              gdo  = fmgsil_o*xmg  + ffesil_o*xfe
+                              gdmg = fmgsil_mg*xmg + ffesil_mg*xfe
+                              gdsi = fmgsil_si*xmg + ffesil_si*xfe
+                              gdfe = fmgsil_fe*xmg + ffesil_fe*xfe
+                              if (gdc*dustadd .gt. fc_metal*dmetal)
+     &                           dustadd = fc_metal*dmetal / gdc
+                              if (gdo*dustadd .gt. fo_metal*dmetal)
+     &                           dustadd = fo_metal*dmetal / gdo
+                              if (gdmg*dustadd .gt. fmg_metal*dmetal)
+     &                           dustadd = fmg_metal*dmetal / gdmg
+                              if (gdsi*dustadd .gt. fsi_metal*dmetal)
+     &                           dustadd = fsi_metal*dmetal / gdsi
+                              if (gdfe*dustadd .gt. ffe_metal*dmetal)
+     &                           dustadd = ffe_metal*dmetal / gdfe
+                           else
+                              gdc  = fc_metal
+                              gdo  = fo_metal
+                              gdmg = fmg_metal
+                              gdsi = fsi_metal
+                              gdfe = ffe_metal
+                           endif
+                           metalgas = dmetal - dustadd
+                           metal(ic,jc,kc) =
+     &                          (metal(ic,jc,kc)*d(ic,jc,kc) +
+     &                          metalgas) * dratio
+                           if (usedust .eq. 1)
+     &                        dust(ic,jc,kc) = olddust + dustadd
+c
+c           Gas-phase part of each element in the ejecta.
+c
+                           ejc  = max(fc_metal*dmetal  - gdc*dustadd,
+     &                                0._RKIND)
+                           ejo  = max(fo_metal*dmetal  - gdo*dustadd,
+     &                                0._RKIND)
+                           ejmg = max(fmg_metal*dmetal - gdmg*dustadd,
+     &                                0._RKIND)
+                           ejsi = max(fsi_metal*dmetal - gdsi*dustadd,
+     &                                0._RKIND)
+                           ejfe = max(ffe_metal*dmetal - gdfe*dustadd,
+     &                                0._RKIND)
 c
 c           New metal species are stored as densities.
 c
                            if (usedustspecies .eq. 1) then
                               metalc(ic,jc,kc)  = metalc(ic,jc,kc)
-     &                            + metalgas * fc_metal
+     &                            + ejc
                               metalo(ic,jc,kc)  = metalo(ic,jc,kc)
-     &                            + metalgas * fo_metal
+     &                            + ejo
                               metalmg(ic,jc,kc) = metalmg(ic,jc,kc)
-     &                            + metalgas * fmg_metal
+     &                            + ejmg
                               metalsi(ic,jc,kc) = metalsi(ic,jc,kc)
-     &                            + metalgas * fsi_metal
+     &                            + ejsi
                               metalfe(ic,jc,kc) = metalfe(ic,jc,kc)
-     &                            + metalgas * ffe_metal
+     &                            + ejfe
                            endif
 c
 c           Grackle metal chemistry: put the new gas-phase C, O and Si
@@ -849,13 +917,13 @@ c
                            if (usemetalchem .eq. 1) then
                               metalspec(ic,jc,kc,ici) =
      &                            metalspec(ic,jc,kc,ici)
-     &                            + metalgas * fc_metal * dratio
+     &                            + ejc * dratio
                               metalspec(ic,jc,kc,ioi) =
      &                            metalspec(ic,jc,kc,ioi)
-     &                            + metalgas * fo_metal * dratio
+     &                            + ejo * dratio
                               metalspec(ic,jc,kc,isii) =
      &                            metalspec(ic,jc,kc,isii)
-     &                            + metalgas * fsi_metal * dratio
+     &                            + ejsi * dratio
                            endif
 c
 c           Preserve the existing dust mix; seed empty cells with the

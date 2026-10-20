@@ -49,7 +49,19 @@
 int FindField(int f, int farray[], int n);
 int CosmologyComputeExpansionFactor(FLOAT time, FLOAT *a, FLOAT *dadt);
 int MakeFieldConservative(field_type field); 
- 
+
+/* Passive mass fields outside the ElectronDensity..ExtraType1 colour range
+   that must be corrected like Metal_Density: the dust density, the
+   species-resolved dust model's element and dust fields, and Grackle's
+   metal chemistry species. Without this they get no flux correction while
+   Metal_Density does, so they drift away from it at every refinement
+   boundary. */
+static int FieldTypeIsExtraColour(int type)
+{
+  return ((type >= DustDensity && type <= DustDensityCarbonaceous) ||
+          FieldTypeIsMetalChemistrySpecies(type));
+}
+
 int grid::CorrectForRefinedFluxes(fluxes *InitialFluxes,
 				  fluxes *RefinedFluxes,
 				  fluxes *BoundaryFluxesThisTimeStep,
@@ -370,7 +382,8 @@ int grid::CorrectForRefinedFluxes(fluxes *InitialFluxes,
               FieldType[field] == MetalSNIaDensity ||
               FieldType[field] == MetalSNIIDensity ||
               (FieldType[field] >= MetalAGBDensity &&
-               FieldType[field] <= TracerFluidField08Density)) {
+               FieldType[field] <= TracerFluidField08Density) ||
+              FieldTypeIsExtraColour(FieldType[field])) {
             fieldNumberList.push_back(field);
           }
         }
@@ -412,6 +425,7 @@ int grid::CorrectForRefinedFluxes(fluxes *InitialFluxes,
             || FieldType[field] == MetalSNIIDensity
 			|| (FieldType[field] >= MetalAGBDensity &&
 		        FieldType[field] <= TracerFluidField08Density)
+            || FieldTypeIsExtraColour(FieldType[field])
         	)
           && FieldTypeNoInterpolate(FieldType[field]) == FALSE
           && FieldTypeIsRadiation(FieldType[field]) == FALSE
@@ -863,6 +877,7 @@ int grid::CorrectForRefinedFluxes(fluxes *InitialFluxes,
 		  FieldType[field] == MetalSNIIDensity
 			|| (FieldType[field] >= MetalAGBDensity &&
 		        FieldType[field] <= TracerFluidField08Density)
+		  || FieldTypeIsExtraColour(FieldType[field])
 		) &&
 		 FieldTypeNoInterpolate(FieldType[field]) == FALSE &&
 		 FieldTypeIsRadiation(FieldType[field]) == FALSE)
