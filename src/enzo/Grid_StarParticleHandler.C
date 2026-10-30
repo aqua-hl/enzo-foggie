@@ -597,6 +597,22 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
 			      float dtLevelAbove, float TopGridTimeStep)
 {
 
+  /* Clear stellar feedback when that feedback pass is off. Otherwise Grackle reapplies
+     the last stored (e.g. restart) events at every chemistry call. */
+
+  if (UseSNeRateField && MyProcessorNumber == ProcessorNumber &&
+      NumberOfBaryonFields > 0 &&
+      (!STARFEED_METHOD(NORMAL_STAR) || StarFeedbackUseTabularYields)) {
+    int SNeRateNum = FindField(SNeRate, FieldType, NumberOfBaryonFields);
+    if (SNeRateNum == -1)
+      ENZO_FAIL("UseSNeRateField = 1 but SNeRate field is missing.\n");
+    int SNeSize = 1;
+    for (int dim = 0; dim < GridRank; dim++)
+      SNeSize *= GridDimension[dim];
+    for (int i = 0; i < SNeSize; i++)
+      BaryonField[SNeRateNum][i] = 0.0;
+  }
+
   if (!StarParticleCreation && !StarParticleFeedback)
     return SUCCESS;
 

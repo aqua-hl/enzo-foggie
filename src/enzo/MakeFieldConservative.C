@@ -21,9 +21,12 @@ int MakeFieldConservative(field_type field){
     int MultiplyField = TRUE, counter = 0;
     //types_to_skip lists types not to be multiplied.
     //Please leave FieldUndefined as the last element, it terminates the loop.
+    //SNeRate holds SN events per code volume, so it is averaged by volume
+    //(not mass) to keep the event count.
     //
     field_type  types_to_skip[] = {Bfield1, Bfield2, Bfield3, PhiField,
         DrivingField1, DrivingField2, DrivingField3, GravPotential, DebugField,
+        SNeRate,
     FieldUndefined};
 
     if( FieldTypeIsDensity(field) ) MultiplyField = FALSE;
