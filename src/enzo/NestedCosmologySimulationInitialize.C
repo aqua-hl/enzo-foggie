@@ -136,6 +136,7 @@ int NestedCosmologySimulationInitialize(FILE *fptr, FILE *Outfptr,
   char *DustDensityMgSilicateName  = "Dust_Density_MgSilicate";
   char *DustDensityFeSilicateName  = "Dust_Density_FeSilicate";
   char *DustDensityCarbonaceousName= "Dust_Density_Carbonaceous";
+  char *MetalDensityOtherName      = "Metal_Density_Other";
   char *ForbidName = "ForbiddenRefinement";
   char *MachName   = "Mach";
   char *PSTempName = "PreShock_Temperature";
@@ -782,6 +783,7 @@ int NestedCosmologySimulationInitialize(FILE *fptr, FILE *Outfptr,
     DataLabel[i++] = DustDensityMgSilicateName;
     DataLabel[i++] = DustDensityFeSilicateName;
     DataLabel[i++] = DustDensityCarbonaceousName;
+    DataLabel[i++] = MetalDensityOtherName;
   }
   /* Grackle metal chemistry: 19 metal species (MetalChemistrySpecies.h). */
   if (UseMetalChemistry)

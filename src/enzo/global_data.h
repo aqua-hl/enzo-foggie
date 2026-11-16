@@ -497,6 +497,8 @@ EXTERN float InitialDustCarbonaceousFraction;   // carb     / dust_total
 #define SOLAR_METAL_FRACTION_MG 0.0454
 #define SOLAR_METAL_FRACTION_SI 0.0525
 #define SOLAR_METAL_FRACTION_FE 0.0848
+/* The remaining ~24% (N, Ne, S, ...), carried as Metal_Density_Other. */
+#define SOLAR_METAL_FRACTION_OTHER (1.0 - SOLAR_METAL_FRACTION_C - SOLAR_METAL_FRACTION_O - SOLAR_METAL_FRACTION_MG - SOLAR_METAL_FRACTION_SI - SOLAR_METAL_FRACTION_FE)
 
 /* Cosmic Ray Model
  * 0: Off - default

@@ -115,6 +115,8 @@ int grid::PrepareBoundaryMassFluxFieldNumbers(){
     int DustMgNum  = FindField(DustDensityMgSilicate,  FieldType, NumberOfBaryonFields);
     int DustFeNum  = FindField(DustDensityFeSilicate,  FieldType, NumberOfBaryonFields);
     int DustCNum   = FindField(DustDensityCarbonaceous,FieldType, NumberOfBaryonFields);
+    int MetalOtherNum = FindField(MetalDensityOther,   FieldType, NumberOfBaryonFields);
+    if (MetalOtherNum != -1) BoundaryMassFluxFieldNumbers[count++] = MetalOtherNum;
     if (MetalCNum  != -1) BoundaryMassFluxFieldNumbers[count++] = MetalCNum;
     if (MetalONum  != -1) BoundaryMassFluxFieldNumbers[count++] = MetalONum;
     if (MetalMgNum != -1) BoundaryMassFluxFieldNumbers[count++] = MetalMgNum;

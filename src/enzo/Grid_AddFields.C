@@ -49,6 +49,7 @@ int grid::AddFields(int TypesToAdd[], int NumberOfFields)
 	       TypesToAdd[i] == DustDensity ||
 	       (TypesToAdd[i] >= MetalDensityCarbon &&
 	        TypesToAdd[i] <= DustDensityCarbonaceous) ||
+	       TypesToAdd[i] == MetalDensityOther ||
 	       FieldTypeIsMetalChemistrySpecies(TypesToAdd[i])) ? tiny_number : 0.0;
       for (j = 0; j < size; j++)
 	BaryonField[n][j] = value;

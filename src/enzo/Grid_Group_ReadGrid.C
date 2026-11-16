@@ -582,6 +582,12 @@ int grid::Group_ReadGrid(FILE *fptr, int GridID, HDF5_hid_t file_id,
   }  // end:   if (NumberOfBaryonFields > 0 && ReadData &&
   //      (MyProcessorNumber == ProcessorNumber)) {
 
+  /* Species-tracked dust: dumps written before Metal_Density_Other existed
+     lack it; add it (all processors) and seed it (owner). */
+
+  if (UseDustSpeciesTrack)
+    this->AddOtherMetalField();
+
   /* Compute Flux quantities */
 
   this->PrepareGridDerivedQuantities();

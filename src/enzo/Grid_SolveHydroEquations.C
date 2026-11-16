@@ -208,6 +208,8 @@ int grid::SolveHydroEquations(int CycleNumber, int NumberOfSubgrids,
       int DustMgNum_  = FindField(DustDensityMgSilicate,  FieldType, NumberOfBaryonFields);
       int DustFeNum_  = FindField(DustDensityFeSilicate,  FieldType, NumberOfBaryonFields);
       int DustCNum_   = FindField(DustDensityCarbonaceous,FieldType, NumberOfBaryonFields);
+      int MetalOtherNum_ = FindField(MetalDensityOther,   FieldType, NumberOfBaryonFields);
+      if (MetalOtherNum_ != -1) colnum[NumberOfColours++] = MetalOtherNum_;
       if (MetalCNum_  != -1) colnum[NumberOfColours++] = MetalCNum_;
       if (MetalONum_  != -1) colnum[NumberOfColours++] = MetalONum_;
       if (MetalMgNum_ != -1) colnum[NumberOfColours++] = MetalMgNum_;

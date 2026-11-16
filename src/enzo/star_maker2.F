@@ -40,6 +40,7 @@ c
      &                      iminit, minit, usedust,
      &                      usedustspecies,
      &                      metalc, metalo, metalmg, metalsi, metalfe,
+     &                      metalother,
      &                      dustsil, dustmg, dustfe, dustc,
      &                      usetracer,
      &                      usetracerwithstarform, numtracer,
@@ -140,7 +141,8 @@ c
       INTG_PREC usejeans, veldivcrit, selfboundcrit, thermalcrit, h2crit
       R_PREC    d(nx,ny,nz),dust(nx,ny,nz),dm(nx,ny,nz),temp(nx,ny,nz)
       R_PREC    metalc(nx,ny,nz), metalo(nx,ny,nz), metalmg(nx,ny,nz),
-     &          metalsi(nx,ny,nz), metalfe(nx,ny,nz)
+     &          metalsi(nx,ny,nz), metalfe(nx,ny,nz),
+     &          metalother(nx,ny,nz)
       R_PREC    dustsil(nx,ny,nz), dustmg(nx,ny,nz),
      &          dustfe(nx,ny,nz), dustc(nx,ny,nz)
       R_PREC    u(nx,ny,nz), v(nx,ny,nz), w(nx,ny,nz), h2(nx,ny,nz)
@@ -358,6 +360,7 @@ c
                   metalmg(i,j,k) = starfactor*metalmg(i,j,k)
                   metalsi(i,j,k) = starfactor*metalsi(i,j,k)
                   metalfe(i,j,k) = starfactor*metalfe(i,j,k)
+                  metalother(i,j,k) = starfactor*metalother(i,j,k)
                   dustsil(i,j,k) = starfactor*dustsil(i,j,k)
                   dustmg(i,j,k)  = starfactor*dustmg(i,j,k)
                   dustfe(i,j,k)  = starfactor*dustfe(i,j,k)
@@ -485,6 +488,7 @@ c
      &                      usedust,
      &                      usedustspecies,
      &                      metalc, metalo, metalmg, metalsi, metalfe,
+     &                      metalother,
      &                      dustsil, dustmg, dustfe, dustc,
      &                      fc_metal, fo_metal, fmg_metal, fsi_metal,
      &                      ffe_metal,
@@ -535,6 +539,7 @@ c    idual    - dual energy flag
 c    imetal   - metallicity flag (0 - none, 1 - yes)
 c    usedust  - dust density flag (0 - none, 1 - yes)
 c    usedustspecies - species-resolved dust+metal flag (0 - none, 1 - yes)
+c    metalother - gas-phase metals other than C/O/Mg/Si/Fe (density)
 c    fc_metal..ffe_metal - solar-abundance mass fractions of C/O/Mg/Si/Fe
 c               relative to total metal mass.
 c    fsil_dust  - canonical MW silicate (Mg+Fe) fraction of total dust.
@@ -607,7 +612,8 @@ c
       R_PREC    metalspec(nx,ny,nz,nmetalspec)
       INTG_PREC isp
       R_PREC    metalc(nx,ny,nz), metalo(nx,ny,nz), metalmg(nx,ny,nz),
-     &          metalsi(nx,ny,nz), metalfe(nx,ny,nz)
+     &          metalsi(nx,ny,nz), metalfe(nx,ny,nz),
+     &          metalother(nx,ny,nz)
       R_PREC    dustsil(nx,ny,nz), dustmg(nx,ny,nz),
      &          dustfe(nx,ny,nz), dustc(nx,ny,nz)
       R_PREC    fc_metal, fo_metal, fmg_metal, fsi_metal, ffe_metal
@@ -640,7 +646,7 @@ c
       R_PREC mform, tfactor, energy, sn_param, msolar_e51,
      &     m_eject, yield, minitial, xv1, xv2, dratio,
      &     distmass, dmetal, metalgas, dustadd, olddust, dustscale
-      R_PREC xmg, xfe, xc, gdc, gdo, gdmg, gdsi, gdfe,
+      R_PREC xmg, xfe, xc, gdc, gdo, gdmg, gdsi, gdfe, fother,
      &     ejc, ejo, ejmg, ejsi, ejfe
       R_PREC dustfloor
       parameter (msolar_e51 = 1800._RKIND)
@@ -660,6 +666,13 @@ c
             enddo
          enddo
       endif
+c
+c     Share of the metal ejecta in elements other than C, O, Mg, Si
+c     and Fe (N, Ne, S, ...). None of it condenses, so it all goes to
+c     the gas-phase other-metal field.
+c
+      fother = 1._RKIND - fc_metal - fo_metal - fmg_metal - fsi_metal
+     &       - ffe_metal
 c
 c     Loop over particles
 c
@@ -908,6 +921,9 @@ c
      &                            + ejsi
                               metalfe(ic,jc,kc) = metalfe(ic,jc,kc)
      &                            + ejfe
+                              metalother(ic,jc,kc) =
+     &                            metalother(ic,jc,kc)
+     &                            + fother * dmetal
                            endif
 c
 c           Grackle metal chemistry: put the new gas-phase C, O and Si

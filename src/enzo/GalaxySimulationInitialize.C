@@ -87,6 +87,7 @@ int GalaxySimulationInitialize(FILE *fptr, FILE *Outfptr,
   char *DustDensityMgSilicateName  = "Dust_Density_MgSilicate";
   char *DustDensityFeSilicateName  = "Dust_Density_FeSilicate";
   char *DustDensityCarbonaceousName= "Dust_Density_Carbonaceous";
+  char *MetalDensityOtherName      = "Metal_Density_Other";
   char *BxName      = "Bx";
   char *ByName      = "By";
   char *BzName      = "Bz";
@@ -607,6 +608,7 @@ int GalaxySimulationInitialize(FILE *fptr, FILE *Outfptr,
    DataLabel[count++] = DustDensityMgSilicateName;
    DataLabel[count++] = DustDensityFeSilicateName;
    DataLabel[count++] = DustDensityCarbonaceousName;
+   DataLabel[count++] = MetalDensityOtherName;
  }
  /* Grackle metal chemistry: 19 metal species (MetalChemistrySpecies.h). */
  if (UseMetalChemistry)

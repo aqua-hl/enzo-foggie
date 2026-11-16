@@ -145,6 +145,12 @@ int grid::GrackleWrapper()
     ENZO_FAIL("Metal cooling is on, but no metal field present.");
   }
 
+  /* Species-tracked dust derives the metal density from its six components
+     (grid::SpeciesConsistent below); a separate SN_Colour metal field would
+     be left out of that sum. */
+  if (UseDustSpeciesTrack && SNColourNum != -1)
+    ENZO_FAIL("UseDustSpeciesTrack = 1 cannot be used with an SN_Colour field.\n");
+
   /* If both metal fields (Pop I/II and III) exist, create a field
      that contains their sum */
 
@@ -163,6 +169,13 @@ int grid::GrackleWrapper()
     else if (SNColourNum != -1)
       MetalPointer = BaryonField[SNColourNum];
   } // ENDELSE both metal types
+
+  /* Species-tracked dust: the metal density Grackle sees is the sum of C,
+     O, Mg, Si, Fe and the other metals. grid::SpeciesConsistent also
+     applies the cap below, scaling the six down with the metal density. */
+  if (UseDustSpeciesTrack && MetalPointer != NULL)
+    if (this->SpeciesConsistent(MetalPointer) == FAIL)
+      ENZO_FAIL("Error in grid->SpeciesConsistent.\n");
 
   /*
     Cap the metal density at 90% of the gas density.

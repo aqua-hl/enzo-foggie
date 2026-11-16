@@ -191,7 +191,7 @@ int grid::GalaxySimulationInitializeGrid(double DiskRadius,
   int dim, i, j, k, m, field, disk, size, MetalNum, MetalIaNum, vel;
   int MetalIINum, MetalAGBNum, MetalNSMNum, DustNum, SNeRateNum;
   int MetalCNum, MetalONum, MetalMgNum, MetalSiNum, MetalFeNum,
-    DustMgNum, DustFeNum, DustCNum;
+    DustMgNum, DustFeNum, DustCNum, MetalOtherNum;
   int MetalChemNum[NUM_METAL_CHEMISTRY_SPECIES], isp;
   int DeNum, HINum, HIINum, HeINum, HeIINum, HeIIINum, HMNum, H2INum,
     H2IINum, DINum, DIINum, HDINum, B1Num, B2Num, B3Num, PhiNum;
@@ -302,6 +302,7 @@ int grid::GalaxySimulationInitializeGrid(double DiskRadius,
     FieldType[DustMgNum  = NumberOfBaryonFields++] = DustDensityMgSilicate;
     FieldType[DustFeNum  = NumberOfBaryonFields++] = DustDensityFeSilicate;
     FieldType[DustCNum   = NumberOfBaryonFields++] = DustDensityCarbonaceous;
+    FieldType[MetalOtherNum = NumberOfBaryonFields++] = MetalDensityOther;
   }
   /* Grackle metal chemistry: 19 metal species (MetalChemistrySpecies.h).
      Every field group appended from here on checks the capacity before
@@ -679,6 +680,7 @@ int grid::GalaxySimulationInitializeGrid(double DiskRadius,
       BaryonField[MetalMgNum][n] = SOLAR_METAL_FRACTION_MG * BaryonField[MetalNum][n];
       BaryonField[MetalSiNum][n] = SOLAR_METAL_FRACTION_SI   * BaryonField[MetalNum][n];
       BaryonField[MetalFeNum][n] = SOLAR_METAL_FRACTION_FE      * BaryonField[MetalNum][n];
+      BaryonField[MetalOtherNum][n] = SOLAR_METAL_FRACTION_OTHER * BaryonField[MetalNum][n];
     } else {
       BaryonField[DustMgNum][n]  = tiny_number;
       BaryonField[DustFeNum][n]  = tiny_number;
@@ -688,6 +690,7 @@ int grid::GalaxySimulationInitializeGrid(double DiskRadius,
       BaryonField[MetalMgNum][n] = tiny_number;
       BaryonField[MetalSiNum][n] = tiny_number;
       BaryonField[MetalFeNum][n] = tiny_number;
+      BaryonField[MetalOtherNum][n] = tiny_number;
     }
   }
 

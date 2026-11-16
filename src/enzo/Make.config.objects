@@ -124,6 +124,7 @@ OBJS_CONFIG_LIB = \
         comp_accel.o \
         ComputePotentialFieldLevelZero.o \
         ComputeRandomForcingNormalization.o \
+        ConsistentMetalColourFluxes.o \
         ComputeTable.o \
     ConstructFeedbackZone.o \
         Continue.o \
@@ -640,6 +641,7 @@ OBJS_CONFIG_LIB = \
 	Grid_ShocksHandler.o \
 	Grid_SolveForPotential.o \
         Grid_SolveHydroEquations.o \
+        Grid_SpeciesConsistent.o \
 	Grid_SolveOneZoneFreefall.o \
   Grid_SolveMHD_Li.o \
 	Grid_SolvePPM_DE.o \

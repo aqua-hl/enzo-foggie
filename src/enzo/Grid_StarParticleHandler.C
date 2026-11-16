@@ -118,7 +118,7 @@ extern "C" void FORTRAN_NAME(star_maker2)(int *nx, int *ny, int *nz,
                int *usedust,
                int *usedustspecies,
                float *metalc, float *metalo, float *metalmg,
-               float *metalsi, float *metalfe,
+               float *metalsi, float *metalfe, float *metalother,
                float *dustsil, float *dustmg, float *dustfe, float *dustc,
                int *usetracer, int *usetracerwithstarform, int *numtracer,
                float *tracer1, float *tracer2, float *tracer3, float *tracer4,
@@ -341,7 +341,7 @@ extern "C" void FORTRAN_NAME(star_feedback2)(int *nx, int *ny, int *nz,
         int *usedust,
         int *usedustspecies,
         float *metalc, float *metalo, float *metalmg,
-        float *metalsi, float *metalfe,
+        float *metalsi, float *metalfe, float *metalother,
         float *dustsil, float *dustmg, float *dustfe, float *dustc,
         float *fc_metal, float *fo_metal, float *fmg_metal,
         float *fsi_metal, float *ffe_metal,
@@ -839,7 +839,7 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
     BaryonField[DustDensityNum] : BaryonField[DensNum];
 
   int MetalCNum = -1, MetalONum = -1, MetalMgNum = -1,
-      MetalSiNum = -1, MetalFeNum = -1;
+      MetalSiNum = -1, MetalFeNum = -1, MetalOtherNum = -1;
   int DustMgNum = -1, DustFeNum = -1, DustCNum = -1;
   float *DustTotalScratch = NULL, *DustSilScratch = NULL;
 
@@ -849,13 +849,14 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
     MetalMgNum = FindField(MetalDensityMagnesium,  FieldType, NumberOfBaryonFields);
     MetalSiNum = FindField(MetalDensitySilicon,    FieldType, NumberOfBaryonFields);
     MetalFeNum = FindField(MetalDensityIron,       FieldType, NumberOfBaryonFields);
+    MetalOtherNum = FindField(MetalDensityOther,   FieldType, NumberOfBaryonFields);
     DustMgNum  = FindField(DustDensityMgSilicate,  FieldType, NumberOfBaryonFields);
     DustFeNum  = FindField(DustDensityFeSilicate,  FieldType, NumberOfBaryonFields);
     DustCNum   = FindField(DustDensityCarbonaceous, FieldType, NumberOfBaryonFields);
 
     if (MetalCNum == -1 || MetalONum == -1 ||
         MetalMgNum == -1 || MetalSiNum == -1 || MetalFeNum == -1 ||
-        DustMgNum == -1 || DustFeNum == -1 || DustCNum == -1)
+        MetalOtherNum == -1 || DustMgNum == -1 || DustFeNum == -1 || DustCNum == -1)
       ENZO_FAIL("UseDustSpeciesTrack = 1 but a required dust/species field is missing.\n");
 
     DustTotalScratch = new float[size];
@@ -868,6 +869,7 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
   float *MetalMgPtr = (MetalMgNum != -1) ? BaryonField[MetalMgNum] : BaryonField[DensNum];
   float *MetalSiPtr = (MetalSiNum != -1) ? BaryonField[MetalSiNum] : BaryonField[DensNum];
   float *MetalFePtr = (MetalFeNum != -1) ? BaryonField[MetalFeNum] : BaryonField[DensNum];
+  float *MetalOtherPtr = (MetalOtherNum != -1) ? BaryonField[MetalOtherNum] : BaryonField[DensNum];
   float *DustSilPtr = (UseDustSpeciesTrack) ? DustSilScratch : BaryonField[DensNum];
   float *DustMgPtr  = (DustMgNum  != -1) ? BaryonField[DustMgNum]  : BaryonField[DensNum];
   float *DustFePtr  = (DustFeNum  != -1) ? BaryonField[DustFeNum]  : BaryonField[DensNum];
@@ -1087,7 +1089,7 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
        &StarMakerStoreInitialMass, tg->ParticleInitialMass,
        &ActiveDustField,
        &UseDustSpeciesTrack,
-       MetalCPtr, MetalOPtr, MetalMgPtr, MetalSiPtr, MetalFePtr,
+       MetalCPtr, MetalOPtr, MetalMgPtr, MetalSiPtr, MetalFePtr, MetalOtherPtr,
        DustSilPtr, DustMgPtr, DustFePtr, DustCPtr,
        &UseTracerFluid, &UseTracerFluidWithStarFormation, &NumberOfTracerFluidFields,
        TracerFluid01Pointer, TracerFluid02Pointer, TracerFluid03Pointer, TracerFluid04Pointer,
@@ -1906,7 +1908,7 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
        &CRModel, &CRFeedback, (CRModel?BaryonField[CRNum]:NULL),
        &ActiveDustField,
        &UseDustSpeciesTrack,
-       MetalCPtr, MetalOPtr, MetalMgPtr, MetalSiPtr, MetalFePtr,
+       MetalCPtr, MetalOPtr, MetalMgPtr, MetalSiPtr, MetalFePtr, MetalOtherPtr,
        DustSilPtr, DustMgPtr, DustFePtr, DustCPtr,
        &SolarMetalFracC, &SolarMetalFracO,
        &SolarMetalFracMg, &SolarMetalFracSi,

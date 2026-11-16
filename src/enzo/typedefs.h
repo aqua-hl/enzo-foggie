@@ -218,8 +218,8 @@ const field_type
   DustDensityFeSilicate   = 121,
   DustDensityCarbonaceous = 122,
 
-  /* Per-cell count of supernova events that occurred during the current
-     timestep. Populated by star_feedback2; consumed by Grackle when
+  /* Supernova events per code volume during the current timestep.
+     Populated by star_feedback2; consumed by Grackle when
      use_sne_field = 1 (Li+ 2019 dust destruction). NOT a density. */
   SNeRate                 = 123,
 
@@ -238,7 +238,13 @@ const field_type
   H3OIIDensity  = 130,
   O2IIDensity   = 131,
 
-  FieldUndefined  = 132;
+  /* dust_species_track = 1: gas-phase metals other than the five tracked
+     elements (N, Ne, S, ...). C, O, Mg, Si, Fe and this field are the
+     record of the gas-phase metals; Metallicity is kept equal to their sum
+     (ConsistentMetalColourFluxes.C, grid::SpeciesConsistent). */
+  MetalDensityOther = 132,
+
+  FieldUndefined  = 133;
 
 /*
 enum field_type {Density, TotalEnergy, InternalEnergy, Pressure,

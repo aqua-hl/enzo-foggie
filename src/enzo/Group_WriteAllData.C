@@ -117,6 +117,8 @@ extern char LastFileNameWritten[MAX_LINE_LENGTH];
  
  
  
+int SpeciesConsistentReport(FLOAT Time, int CycleNumber);
+
 int Group_WriteAllData(char *basename, int filenumber,
 		 HierarchyEntry *TopGrid, TopGridData &MetaData,
 		 ExternalBoundary *Exterior, 
@@ -992,6 +994,10 @@ int Group_WriteAllData(char *basename, int filenumber,
 #ifdef USE_MPI
   twrite1 = MPI_Wtime();
 #endif
+
+  /* Species-tracked dust: write out the metal-consistency counters. */
+  if (UseDustSpeciesTrack)
+    SpeciesConsistentReport(MetaData.Time, MetaData.CycleNumber);
 
   if ( MyProcessorNumber == ROOT_PROCESSOR ){
     sptr = fopen("OutputLog", "a");

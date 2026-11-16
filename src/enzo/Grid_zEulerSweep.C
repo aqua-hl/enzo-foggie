@@ -27,6 +27,22 @@
 #include "GridList.h"
 #include "ExternalBoundary.h"
 #include "Grid.h"
+
+int ConsistentMetalDensity(float *colslice, int NumberOfColours, int colnum[],
+                           int FieldType[], int idim, int jdim,
+                           int i1, int i2, int j1, int j2, int active,
+                           double volume);
+int ConsistentMetalFaceStates(float *colls, float *colrs,
+                              const float *colslice, const float *density,
+                              const float *pressure, const float *velocity,
+                              const float *dx, const float *flatten,
+                              int NumberOfColours, int colnum[], int FieldType[],
+                              int idim, int jdim, int istart, int iend,
+                              int jstart, int jend, float dt, float gamma,
+                              int pressure_free, int ordinary_flattening);
+int ConsistentMetalColourFluxes(float *colf, int NumberOfColours, int colnum[],
+                                int FieldType[], int idim, int jdim,
+                                int istart, int iend);
 #include "euler_sweep.h"
 //#include "fortran.def"
 
@@ -201,6 +217,25 @@ int grid::zEulerSweep(int j, int NumberOfSubgrids, fluxes *SubgridFluxes[],
 			   &dtFixed, &Gamma, &PPMDiffusionParameter,
 			   &PPMFlatteningParameter, diffcoef, flatten);
 
+  /* Species-tracked dust: the six metal components are the record and
+     Metal_Density is their sum. Set it so on the whole slice before the
+     reconstruction (ConsistentMetalColourFluxes.C). */
+
+  double MetalCellVolume = 1.0;
+  for (int d = 0; d < GridRank; d++)
+    MetalCellVolume *= CellWidth[d][0];
+  if (UseDustSpeciesTrack && NumberOfColours > 0) {
+    if (ReconstructionMethod != PPM)
+      ENZO_FAIL("UseDustSpeciesTrack requires PPM reconstruction.\n");
+    if (ConsistentMetalDensity(colslice, NumberOfColours, colnum, FieldType,
+                               GridDimension[2], GridDimension[0],
+                               GridStartIndex[2], GridEndIndex[2],
+                               GridStartIndex[0], GridEndIndex[0],
+                               j >= GridStartIndex[1] && j <= GridEndIndex[1],
+                               MetalCellVolume) == FAIL)
+      ENZO_FAIL("Negative or non-finite metal component before the z sweep.\n");
+  }
+
   /* Compute Eulerian left and right states at zone edges via interpolation */
 
   if (ReconstructionMethod == PPM)
@@ -214,6 +249,20 @@ int grid::zEulerSweep(int j, int NumberOfSubgrids, fluxes *SubgridFluxes[],
 			   &dtFixed, &Gamma, &PressureFree, 
 			   dls, drs, pls, prs, gels, gers, uls, urs, vls, vrs,
 			   wls, wrs, &NumberOfColours, colslice, colls, colrs);
+
+  /* Species-tracked dust: rebuild the six metal-component face states from
+     their reconstructed mass fractions; they then sum to the metal face
+     state. */
+
+  if (UseDustSpeciesTrack && NumberOfColours > 0)
+    if (ConsistentMetalFaceStates(colls, colrs, colslice, dslice, pslice, uslice,
+                                  CellWidthTemp[2], flatten, NumberOfColours,
+                                  colnum, FieldType,
+                                  GridDimension[2], GridDimension[0],
+                                  GridStartIndex[2], GridEndIndex[2], js-1, je-1,
+                                  dtFixed, Gamma, PressureFree,
+                                  PPMFlatteningParameter) == FAIL)
+      ENZO_FAIL("Invalid metal fraction reconstruction in the z sweep.\n");
 
   /* Compute (Lagrangian part of the) Riemann problem at each zone boundary */
 
@@ -281,6 +330,15 @@ int grid::zEulerSweep(int j, int NumberOfSubgrids, fluxes *SubgridFluxes[],
 
   } // ENDCASE
 
+  /* Species-tracked dust: the metal flux is the sum of its six component
+     fluxes. */
+
+  if (UseDustSpeciesTrack && NumberOfColours > 0)
+    if (ConsistentMetalColourFluxes(colf, NumberOfColours, colnum, FieldType,
+                                    GridDimension[2], GridDimension[0],
+                                    GridStartIndex[2], GridEndIndex[2]) == FAIL)
+      ENZO_FAIL("Missing metal component colour in the z sweep.\n");
+
   /* Compute Eulerian fluxes and update zone-centered quantities */
 
   FORTRAN_NAME(euler)(dslice, eslice, grslice, geslice, uslice, vslice, wslice,
@@ -291,6 +349,18 @@ int grid::zEulerSweep(int j, int NumberOfSubgrids, fluxes *SubgridFluxes[],
 		      &DualEnergyFormalismEta1, &DualEnergyFormalismEta2,
 		      df, ef, uf, vf, wf, gef, ges,
 		      &NumberOfColours, colslice, colf, &SmallRho);
+
+  /* Species-tracked dust: euler floors each colour on its own, so set
+     Metal_Density to the sum of its six components again. */
+
+  if (UseDustSpeciesTrack && NumberOfColours > 0)
+    if (ConsistentMetalDensity(colslice, NumberOfColours, colnum, FieldType,
+                               GridDimension[2], GridDimension[0],
+                               GridStartIndex[2], GridEndIndex[2],
+                               GridStartIndex[0], GridEndIndex[0],
+                               j >= GridStartIndex[1] && j <= GridEndIndex[1],
+                               MetalCellVolume) == FAIL)
+      ENZO_FAIL("Negative or non-finite metal component after the z sweep.\n");
 
   /* If necessary, recompute the pressure to correctly set ge and e */
 

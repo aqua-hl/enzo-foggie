@@ -758,6 +758,16 @@ gradient force to gravitational force for one-zone collapse test. */
 
    int GrackleWrapper();
 
+/* Set the metal density to the sum of the five element fields and
+   Metal_Density_Other before a Grackle call (species-tracked dust). */
+
+   int SpeciesConsistent(float *MetalPointer);
+
+/* On restart from a dump without Metal_Density_Other, add it and seed it
+   with max(metal - elements, 0). */
+
+   int AddOtherMetalField();
+
 /* Handle the selection of shock finding algorithm */
 
    int ShocksHandler();

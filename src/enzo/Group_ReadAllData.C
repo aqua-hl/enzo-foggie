@@ -471,6 +471,15 @@ int Group_ReadAllData(char *name, HierarchyEntry *TopGrid, TopGridData &MetaData
     }
   }
 
+  /* Species-tracked dust: register Metal_Density_Other with the boundary
+     when restarting from a dump that predates it (the grids add it in
+     Grid_Group_ReadGrid, at the end of their field list like here). */
+
+  if (UseDustSpeciesTrack)
+    if (Exterior->ReturnFieldNum(MetalDensityOther) < 0 &&
+        Exterior->ReturnFieldNum(MetalDensityCarbon) >= 0)
+      Exterior->AddField(MetalDensityOther);
+
   /* Read StarParticle data. */
  
   if (ReadStarParticleData(fptr, Hfile_id, log_fptr) == FAIL) {

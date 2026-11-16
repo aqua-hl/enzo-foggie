@@ -23,6 +23,7 @@
 #include "typedefs.h"
 #include "global_data.h"
 #include "CosmologyParameters.h"
+#include "StarParticleData.h"
 
 
 int GetUnits(float *DensityUnits, float *LengthUnits,
@@ -285,6 +286,22 @@ int GrackleReadParameters(FILE *fptr, FLOAT InitTime)
     }
     if (grackle_data->dust_model != 1) {
       ENZO_FAIL("UseDustSpeciesTrack = 1 requires dust_model = 1.\n");
+    }
+    /* The six gas-phase metal components are the record and Metal_Density
+       is derived from them (ConsistentMetalColourFluxes.C), so metal that a
+       star routine adds to or takes from Metal_Density alone would be lost
+       or created. Only star method 0 (star_maker2, star_feedback2) updates
+       the six. */
+    if ((StarParticleCreation != 0 &&
+         StarParticleCreation != (1 << NORMAL_STAR)) ||
+        (StarParticleFeedback != 0 &&
+         StarParticleFeedback != (1 << NORMAL_STAR)) ||
+        StarFeedbackUseTabularYields) {
+      ENZO_FAIL("UseDustSpeciesTrack = 1 requires star method 0 without "
+                "tabular yields (StarParticleCreation and "
+                "StarParticleFeedback 0 or 1, StarFeedbackUseTabularYields "
+                "= 0): the other star routines do not update the six metal "
+                "components that Metal_Density is derived from.\n");
     }
   }
 #endif
