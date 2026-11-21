@@ -40,6 +40,7 @@ int GetUnits(float *DensityUnits, float *LengthUnits,
 	     float *TemperatureUnits, float *TimeUnits,
 	     float *VelocityUnits, FLOAT Time);
 int FindField(int field, int farray[], int numfields);
+void DustSilicateComposition(float MgSilicate[4], float FeSilicate[4]);
 void mt_init(unsigned_int seed);
 unsigned_long_int mt_random();
 
@@ -1847,19 +1848,11 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
          and Fe-silicate (Fe2SiO4), the same ones Grackle's grain growth
          uses, so the gas gives up exactly the elements that condense
          into SN dust. */
-      float MgSilicateFrac[4] = {0.345521, 0.0, 0.199630, 0.454849};
-      float FeSilicateFrac[4] = {0.0, 0.548111, 0.137825, 0.314064};
+      float MgSilicateFrac[4], FeSilicateFrac[4];
+      DustSilicateComposition(MgSilicateFrac, FeSilicateFrac);
 #if defined(USE_GRACKLE) && defined(GRACKLE_NEW_DUST_MODEL)
       DustCondensationEfficiency =
         (float) grackle_data->dust_condensation_eff;
-      MgSilicateFrac[0] = (float) grackle_data->dust_mg_silicate_f_Mg;
-      MgSilicateFrac[1] = (float) grackle_data->dust_mg_silicate_f_Fe;
-      MgSilicateFrac[2] = (float) grackle_data->dust_mg_silicate_f_Si;
-      MgSilicateFrac[3] = (float) grackle_data->dust_mg_silicate_f_O;
-      FeSilicateFrac[0] = (float) grackle_data->dust_fe_silicate_f_Mg;
-      FeSilicateFrac[1] = (float) grackle_data->dust_fe_silicate_f_Fe;
-      FeSilicateFrac[2] = (float) grackle_data->dust_fe_silicate_f_Si;
-      FeSilicateFrac[3] = (float) grackle_data->dust_fe_silicate_f_O;
 #endif
 
       /* Refill the scratch dust totals: star_maker2 above scales the

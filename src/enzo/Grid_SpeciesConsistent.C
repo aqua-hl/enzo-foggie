@@ -29,7 +29,8 @@
 /    The changes are accumulated per process (density x cell volume in
 /    code units, over every grid including cells covered by subgrids) and
 /    written to SpeciesConsistent.out by SpeciesConsistentReport at each
-/    data dump, with the counters of the sweeps.
+/    data dump, with the counters of the sweeps and of the flux
+/    correction (grid::SettleGrainDeficit).
 /
 ************************************************************************/
 
@@ -46,6 +47,7 @@
 int FindField(int field, int farray[], int numfields);
 int CommunicationSumValues(double *Values, int Number);
 void ConsistentMetalCounters(double values[6]);
+void GrainDeficitCounters(double values[5]);
 
 /* Since the last report: 0 cells seen; 1 change of Metal_Density by the
    sum; 2 negative inputs zeroed; 3 non-finite cells skipped; 4 cells
@@ -190,12 +192,13 @@ int SpeciesConsistentReport(FLOAT Time, int CycleNumber)
   if (!UseDustSpeciesTrack)
     return SUCCESS;
 
-  double total[12];
+  double total[17];
   int q;
   for (q = 0; q < 6; q++)
     total[q] = SCAccum[q];
   ConsistentMetalCounters(total + 6);
-  CommunicationSumValues(total, 12);
+  GrainDeficitCounters(total + 12);
+  CommunicationSumValues(total, 17);
 
   if (MyProcessorNumber == ROOT_PROCESSOR) {
     FILE *fp = fopen("SpeciesConsistent.out", "a");
@@ -212,13 +215,21 @@ int SpeciesConsistentReport(FLOAT Time, int CycleNumber)
                 "absolute dMetal by the sum, fraction profiles built, "
                 "profiles steepened, negative face fractions, stencil "
                 "cells without metal.\n"
+                "# In the flux correction (grid::SettleGrainDeficit): grain "
+                "fields found at or below zero, their deficit, mass the "
+                "gas phase paid, fields left at the floor, mass created "
+                "in metals plus dust.\n"
                 "# cycle time n_cells dMetal n_negative n_nonfinite "
                 "n_capped dMetal_cap sweep_dMetal sweep_abs_dMetal "
-                "n_profiles n_steepened n_negative_faces n_zero_metal\n");
+                "n_profiles n_steepened n_negative_faces n_zero_metal "
+                "reflux_n_deficit reflux_deficit reflux_paid "
+                "reflux_n_floored reflux_created\n");
       fprintf(fp, "%"ISYM" %.10"GSYM" %.0f %.6e %.0f %.0f %.0f %.6e "
-              "%.6e %.6e %.0f %.0f %.0f %.0f\n", CycleNumber, Time,
+              "%.6e %.6e %.0f %.0f %.0f %.0f %.0f %.6e %.6e %.0f %.6e\n",
+              CycleNumber, Time,
               total[0], total[1], total[2], total[3], total[4], total[5],
-              total[6], total[7], total[8], total[9], total[10], total[11]);
+              total[6], total[7], total[8], total[9], total[10], total[11],
+              total[12], total[13], total[14], total[15], total[16]);
       fclose(fp);
     }
   }

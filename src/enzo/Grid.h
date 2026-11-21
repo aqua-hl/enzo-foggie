@@ -768,6 +768,12 @@ gradient force to gravitational force for one-zone collapse test. */
 
    int AddOtherMetalField();
 
+/* After a FluxCorrection = 2 correction of the cells next to a subgrid face,
+   pay a grain deficit from the gas-phase metals the grains are made of. */
+
+   int SettleGrainDeficit(int Start[], int End[], int Offset,
+                          int CorrectLeft, int CorrectRight, float Floor);
+
 /* Handle the selection of shock finding algorithm */
 
    int ShocksHandler();

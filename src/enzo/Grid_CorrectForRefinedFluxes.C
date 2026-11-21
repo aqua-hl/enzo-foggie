@@ -565,23 +565,12 @@ int grid::CorrectForRefinedFluxes(fluxes *InitialFluxes,
 		      } // else /* if( SUBlingGrid == FALSE ) */
 		    } // if(CorrectRightBaryonField)
 		
-		    /* A colour left non-positive by its correction is floored on
-		       its own. Undoing every field of the cell instead would also drop its gas, 
-			   metal and momentum corrections. */
+		    /* A colour left non-positive by its correction is dealt with
+		       once every field is corrected (see below). */
 
-		    if (FieldTypeIsDensity(FieldType[field]) == TRUE &&
-			FieldType[field] != Density) {
-		      if (CorrectLeftBaryonField &&
-			  BaryonField[field][FieldIndex] <= 0)
-			BaryonField[field][FieldIndex] = min_color;
-		      if (CorrectRightBaryonField &&
-			  BaryonField[field][FieldIndex+Offset] <= 0)
-			BaryonField[field][FieldIndex+Offset] = min_color;
-		    }
-
-		    else if (FieldType[field] == Density ||
-			     FieldType[field] == TotalEnergy ||
-			     FieldType[field] == InternalEnergy) {
+		    if (FieldType[field] == Density ||
+			FieldType[field] == TotalEnergy ||
+			FieldType[field] == InternalEnergy) {
 
 		      /* If new density & energy is < 0 then undo the
 			 flux correction. */
@@ -833,6 +822,38 @@ int grid::CorrectForRefinedFluxes(fluxes *InitialFluxes,
             }
           }
         
+	  /* FluxCorrection = 2 corrects the colours directly, which can leave
+	     one non-positive. Undoing every field of the cell instead would
+	     also drop its gas, metal and momentum corrections, so each colour
+	     is dealt with on its own. Grains first take what they lack from
+	     the gas-phase metals they are made of (grid::SettleGrainDeficit);
+	     a colour that is still non-positive is set to the colour floor. */
+
+	  if (FluxCorrection == 2 && Coordinate == Cartesian) {
+	    if (this->SettleGrainDeficit(Start, End, Offset,
+					 CorrectLeftBaryonField,
+					 CorrectRightBaryonField,
+					 min_color) == FAIL)
+	      ENZO_FAIL("Error in grid->SettleGrainDeficit.\n");
+	    for (int index = 0; index < fieldNumberList.size(); ++index) {
+	      field = fieldNumberList[index];
+	      if (FieldTypeIsDensity(FieldType[field]) == TRUE &&
+		  FieldType[field] != Density)
+		for (k = Start[2]; k <= End[2]; k++)
+		  for (j = Start[1]; j <= End[1]; j++) {
+		    FieldIndex = (k*GridDimension[1] + j)*GridDimension[0] + Start[0];
+		    for (i = Start[0]; i <= End[0]; i++, FieldIndex++) {
+		      if (CorrectLeftBaryonField &&
+			  BaryonField[field][FieldIndex] <= 0)
+			BaryonField[field][FieldIndex] = min_color;
+		      if (CorrectRightBaryonField &&
+			  BaryonField[field][FieldIndex+Offset] <= 0)
+			BaryonField[field][FieldIndex+Offset] = min_color;
+		    }
+		  }
+	    }
+	  }
+
 	  /* If appropriate, restore consistency between total and internal
 	     energy in corrected faces. */
 	
