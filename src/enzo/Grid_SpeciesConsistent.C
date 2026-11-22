@@ -136,7 +136,12 @@ int grid::SpeciesConsistent(float *MetalPointer)
    boundary gets it in Group_ReadAllData) and seed it on the owner with
    max(metal - elements, 0), so the six gas-metal reservoirs partition
    Metal_Density from the restart on. Any mismatch already in the dump is
-   frozen into it here. Both Group_ReadGrid readers call this. */
+   frozen into it here. Both Group_ReadGrid readers call this.
+
+   The readers accept a dump that fills every slot but the scratch one
+   (BaryonField[NumberOfBaryonFields]). Adding a field to such a dump would
+   move the scratch slot past the end of the field arrays, so the capacity
+   is checked first, as it is when the fields are first created. */
 
 int grid::AddOtherMetalField()
 {
@@ -156,6 +161,9 @@ int grid::AddOtherMetalField()
     if (ElNum[q] < 0)
       return SUCCESS;
   }
+
+  this->CheckBaryonFieldCapacity(1, "Metal_Density_Other, which this "
+                                 "restart dump predates");
 
   char *OtherName = "Metal_Density_Other";
   int OtherNum = NumberOfBaryonFields;
