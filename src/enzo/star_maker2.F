@@ -102,7 +102,11 @@ c    level - current level of refinement
 c    procnum - processor number (for output)
 c    imetalSNIa - SN Ia metallicity flag (0 - none, 1 - yes)
 c    iminit - whether to store initial mass separately
-c    usedust  - whether the dust density field is present (0 - no, 1 - yes)
+c    usedust  - whether the dust density field is present (0 - no, 1 - yes).
+c               Dust is carried outside the gas density, so when it is
+c               present the particle also takes the dust of the gas it
+c               forms from, counted as metal: gas + dust + stars and
+c               their metals are unchanged by star formation.
 c    usedustspecies - whether species-resolved dust+metal tracking is on
 c               (0 - no, 1 - yes). When on, the 5 gas-metal species fields
 c               (C, O, Mg, Si, Fe) and 4 dust species fields are scaled
@@ -176,6 +180,7 @@ c
       R_PREC   thish2frac, h2mass
       R_PREC   sndspdC
       R_PREC   isosndsp2, starmass, starfraction, starfactor
+      R_PREC   dustmass
       R_PREC   bmass, jeanmass
       parameter (sndspdC=1.3095e8_RKIND)
 c
@@ -308,10 +313,16 @@ c
                if (starfraction*bmass .lt. smthresh) goto 10
 #endif
 c
-c              Create a star particle
+c              Create a star particle. The grains of the gas that forms
+c              it are removed from the grid below, so their mass goes
+c              into the particle with the gas.
+c
+               dustmass = 0._RKIND
+               if (usedust .eq. 1) dustmass = starfraction*dust(i,j,k)
 c
                ii = ii + 1
                mp(ii)  = starfraction * thish2frac * d(i,j,k)
+     &                 + dustmass
                if (iminit .eq. 1) then
                   minit(ii) = mp(ii)
                endif
@@ -330,10 +341,14 @@ c
                   wp(ii) = w(i,j,k)
                endif
 c
-c              Set the particle metal fraction
+c              Set the particle metal fraction: the gas-phase metals
+c              plus the grains, which are all metal.
 c
                if (imetal .eq. 1) then
                   metalf(ii) = metal(i,j,k)    ! in here metal is a fraction
+                  if (dustmass .gt. 0._RKIND)
+     &               metalf(ii) = (metal(i,j,k)*(mp(ii) - dustmass)
+     &                             + dustmass) / mp(ii)
                else
                   metalf(ii) = 0._RKIND
                endif
@@ -342,6 +357,9 @@ c              Metallicity from Type Ia SNe
 
                if (imetalSNIa .eq. 1) then
                   metalfSNIa(ii) = metalSNIa(i,j,k)    ! in here metal is a fraction
+                  if (dustmass .gt. 0._RKIND)
+     &               metalfSNIa(ii) = metalSNIa(i,j,k)
+     &                              * (mp(ii) - dustmass) / mp(ii)
                endif
 c
 c              Remove mass from grid
@@ -547,7 +565,9 @@ c    fmg_sil_dust, ffe_sil_dust - Mg/Fe split within the silicate fraction.
 c    fc_dust    - canonical MW carbonaceous fraction of total dust.
 c    dustcond   - fraction of new metal ejecta condensed into dust
 c               (less in a cell whose ejecta lack an element its dust
-c               mix needs)
+c               mix needs). Dust is carried outside the gas density, so
+c               the gas receives the ejected mass less this part: gas +
+c               dust gain exactly what the particle loses.
 c    fmgsil_mg..fmgsil_o, ffesil_mg..ffesil_o - Mg, Fe, Si and O mass
 c               fractions of Mg-silicate and Fe-silicate (Grackle's
 c               dust_mg_silicate_f_* and dust_fe_silicate_f_*). The
@@ -645,7 +665,8 @@ c
       INTG_PREC i, j, k, n, ic, jc, kc, stepk, stepj, cellstep
       R_PREC mform, tfactor, energy, sn_param, msolar_e51,
      &     m_eject, yield, minitial, xv1, xv2, dratio,
-     &     distmass, dmetal, metalgas, dustadd, olddust, dustscale
+     &     distmass, dmetal, metalgas, dustadd, olddust, dustscale,
+     &     gasadd
       R_PREC xmg, xfe, xc, gdc, gdo, gdmg, gdsi, gdfe, fother,
      &     ejc, ejo, ejmg, ejsi, ejfe
       R_PREC dustfloor
@@ -783,65 +804,21 @@ c
                   do ic = i-distrad,i+distrad
                      cellstep = stepj + abs(ic-i)
                      if (cellstep .le. diststep) then
-                        dratio = 1._RKIND/(d(ic,jc,kc) + distmass)
 c
-c           Grackle metal chemistry species are fractions here (like
-c           the primordial species) but must not inherit the ambient
-c           composition of the ejected mass: their metals are added
-c           explicitly below. Hold their densities fixed.
+c           Metal ejecta of this cell ("Cen method", which takes gas
+c           recycling into account) and the part of them that condenses
+c           into dust.
 c
-                        if (usemetalchem .eq. 1) then
-                           do isp = 1, nmetalspec
-                              metalspec(ic,jc,kc,isp) =
-     &                             metalspec(ic,jc,kc,isp)
-     &                             * d(ic,jc,kc) * dratio
-                           enddo
-                        endif
-c
-c           Store SN-equivalent events per code volume for Grackle dust
-c           destruction: energy*d1*v1**2 is erg/cm^3, so multiplying by
-c           x1**3 (not (dx*x1)**3) gives events per code volume.
-c
-                        if (usesnerate .eq. 1) then
-                           sne_rate(ic,jc,kc) = sne_rate(ic,jc,kc) +
-     &                          energy * d1 * v1**2 * x1**3 /
-     &                          10._RKIND**51._RKIND
-                        endif
-                        if( crmodel .gt. 0 ) then
-                          te(ic,jc,kc) = ((te(ic,jc,kc)*d(ic,jc,kc)) +
-     &                          energy*(1._RKIND-crfeedback)) * dratio
-                          if (idual .eq. 1)
-     &                      ge(ic,jc,kc) =
-     &                         ((ge(ic,jc,kc)*d(ic,jc,kc)) +
-     &                         energy*(1._RKIND-crfeedback)) * dratio
-                          cr(ic,jc,kc) = cr(ic,jc,kc)+energy*crfeedback
-                        else
-                           te(ic,jc,kc) = ((te(ic,jc,kc)*d(ic,jc,kc)) +
-     &                          energy) * dratio
-                           if (idual .eq. 1)
-     &                          ge(ic,jc,kc) =
-     &                          ((ge(ic,jc,kc)*d(ic,jc,kc)) +
-     &                          energy) * dratio
-                        endif
-c
-c           Metal feedback (note that in this function gas metal is
-c             a fraction (rho_metal/rho_gas) rather than a density.
-c             The conversion has been done in the handling routine)
-c
+                        dmetal = 0._RKIND
+                        dustadd = 0._RKIND
+                        olddust = 0._RKIND
                         if (imetal .eq. 1) then
-c
-c           "Cen method".  This takes into account gas recycling.
-c           Split new metal ejecta between gas-phase metals and dust.
-c
                            dmetal = (mform / distcells) *
      &                          (yield * (1._RKIND-metalf(n)) +
      &                          m_eject * metalf(n))
                            if (usedust .eq. 1) then
                               dustadd = dustcond*dmetal
                               olddust = dust(ic,jc,kc)
-                           else
-                              dustadd = 0._RKIND
-                              olddust = 0._RKIND
                            endif
 c
 c           Element mass fractions (gd*) of the new dust. With species-
@@ -888,6 +865,59 @@ c
                               gdsi = fsi_metal
                               gdfe = ffe_metal
                            endif
+                        endif
+c
+c           Dust is carried outside the gas density, so the gas gets
+c           the ejected mass less the part that condenses.
+c
+                        gasadd = distmass - dustadd
+                        dratio = 1._RKIND/(d(ic,jc,kc) + gasadd)
+c
+c           Grackle metal chemistry species are fractions here (like
+c           the primordial species) but must not inherit the ambient
+c           composition of the ejected mass: their metals are added
+c           explicitly below. Hold their densities fixed.
+c
+                        if (usemetalchem .eq. 1) then
+                           do isp = 1, nmetalspec
+                              metalspec(ic,jc,kc,isp) =
+     &                             metalspec(ic,jc,kc,isp)
+     &                             * d(ic,jc,kc) * dratio
+                           enddo
+                        endif
+c
+c           Store SN-equivalent events per code volume for Grackle dust
+c           destruction: energy*d1*v1**2 is erg/cm^3, so multiplying by
+c           x1**3 (not (dx*x1)**3) gives events per code volume.
+c
+                        if (usesnerate .eq. 1) then
+                           sne_rate(ic,jc,kc) = sne_rate(ic,jc,kc) +
+     &                          energy * d1 * v1**2 * x1**3 /
+     &                          10._RKIND**51._RKIND
+                        endif
+                        if( crmodel .gt. 0 ) then
+                          te(ic,jc,kc) = ((te(ic,jc,kc)*d(ic,jc,kc)) +
+     &                          energy*(1._RKIND-crfeedback)) * dratio
+                          if (idual .eq. 1)
+     &                      ge(ic,jc,kc) =
+     &                         ((ge(ic,jc,kc)*d(ic,jc,kc)) +
+     &                         energy*(1._RKIND-crfeedback)) * dratio
+                          cr(ic,jc,kc) = cr(ic,jc,kc)+energy*crfeedback
+                        else
+                           te(ic,jc,kc) = ((te(ic,jc,kc)*d(ic,jc,kc)) +
+     &                          energy) * dratio
+                           if (idual .eq. 1)
+     &                          ge(ic,jc,kc) =
+     &                          ((ge(ic,jc,kc)*d(ic,jc,kc)) +
+     &                          energy) * dratio
+                        endif
+c
+c           Metal feedback (note that in this function gas metal is
+c             a fraction (rho_metal/rho_gas) rather than a density.
+c             The conversion has been done in the handling routine).
+c             The gas-phase metals get the ejecta that did not condense.
+c
+                        if (imetal .eq. 1) then
                            metalgas = dmetal - dustadd
                            metal(ic,jc,kc) =
      &                          (metal(ic,jc,kc)*d(ic,jc,kc) +
@@ -976,12 +1006,12 @@ c
 c           Mass and momentum feedback
 c
                         u(ic,jc,kc) = u(ic,jc,kc)*d(ic,jc,kc) +
-     &                       distmass * up(n)
+     &                       gasadd * up(n)
                         v(ic,jc,kc) = v(ic,jc,kc)*d(ic,jc,kc) +
-     &                       distmass * vp(n)
+     &                       gasadd * vp(n)
                         w(ic,jc,kc) = w(ic,jc,kc)*d(ic,jc,kc) +
-     &                       distmass * wp(n)
-                        d(ic,jc,kc) = d(ic,jc,kc) + distmass
+     &                       gasadd * wp(n)
+                        d(ic,jc,kc) = d(ic,jc,kc) + gasadd
                         u(ic,jc,kc) = u(ic,jc,kc)/d(ic,jc,kc)
                         v(ic,jc,kc) = v(ic,jc,kc)/d(ic,jc,kc)
                         w(ic,jc,kc) = w(ic,jc,kc)/d(ic,jc,kc)
@@ -1010,42 +1040,42 @@ c
 
                               if (numtracer .ge. 1) then
                                  tracer1(ic,jc,kc) =  tracer1(ic,jc,kc)
-     &                                             + distmass
+     &                                             + gasadd
                               endif
 
                               if (numtracer .ge. 2) then
                                  tracer2(ic,jc,kc) =  tracer2(ic,jc,kc)
-     &                                             + distmass
+     &                                             + gasadd
                               endif
 
                               if (numtracer .ge. 3) then
                                  tracer3(ic,jc,kc) =  tracer3(ic,jc,kc)
-     &                                             + distmass
+     &                                             + gasadd
                               endif
 
                               if (numtracer .ge. 4) then
                                  tracer4(ic,jc,kc) =  tracer4(ic,jc,kc)
-     &                                             + distmass
+     &                                             + gasadd
                               endif
 
                               if (numtracer .ge. 5) then
                                  tracer5(ic,jc,kc) =  tracer5(ic,jc,kc)
-     &                                             + distmass
+     &                                             + gasadd
                               endif
 
                               if (numtracer .ge. 6) then
                                  tracer6(ic,jc,kc) =  tracer6(ic,jc,kc)
-     &                                             + distmass
+     &                                             + gasadd
                               endif
 
                               if (numtracer .ge. 7) then
                                  tracer7(ic,jc,kc) =  tracer7(ic,jc,kc)
-     &                                             + distmass
+     &                                             + gasadd
                               endif
 
                               if (numtracer .ge. 8) then
                                  tracer8(ic,jc,kc) =  tracer8(ic,jc,kc)
-     &                                             + distmass
+     &                                             + gasadd
                               endif
 
                            endif
