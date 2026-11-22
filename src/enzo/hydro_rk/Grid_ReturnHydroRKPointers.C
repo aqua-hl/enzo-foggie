@@ -144,14 +144,18 @@ int grid::ReturnHydroRKPointers(float **Prim, bool ReturnMassFractions)
   if (SNColourNum      != -1) Prim[nfield++] = BaryonField[SNColourNum];
   if (DustDensityNum   != -1) Prim[nfield++] = BaryonField[DustDensityNum];
 
-  /* Species-resolved dust tracking: 5 gas-phase elements + 3 dust species
-     (the bulk and silicate dust sums are not carried as fields). */
+  /* Species-resolved dust tracking: the 6 gas-phase metal reservoirs (C, O,
+     Mg, Si, Fe and the other metals) + 3 dust species (the bulk and
+     silicate dust sums are not carried as fields). Metal_Density is the
+     sum of the six (grid::SpeciesConsistent), so all six must be
+     transported. */
   if (UseDustSpeciesTrack) {
     int MetalCNum  = FindField(MetalDensityCarbon,     FieldType, NumberOfBaryonFields);
     int MetalONum  = FindField(MetalDensityOxygen,     FieldType, NumberOfBaryonFields);
     int MetalMgNum = FindField(MetalDensityMagnesium,  FieldType, NumberOfBaryonFields);
     int MetalSiNum = FindField(MetalDensitySilicon,    FieldType, NumberOfBaryonFields);
     int MetalFeNum = FindField(MetalDensityIron,       FieldType, NumberOfBaryonFields);
+    int MetalOtherNum = FindField(MetalDensityOther,   FieldType, NumberOfBaryonFields);
     int DustMgNum  = FindField(DustDensityMgSilicate,  FieldType, NumberOfBaryonFields);
     int DustFeNum  = FindField(DustDensityFeSilicate,  FieldType, NumberOfBaryonFields);
     int DustCNum   = FindField(DustDensityCarbonaceous,FieldType, NumberOfBaryonFields);
@@ -160,6 +164,7 @@ int grid::ReturnHydroRKPointers(float **Prim, bool ReturnMassFractions)
     if (MetalMgNum != -1) Prim[nfield++] = BaryonField[MetalMgNum];
     if (MetalSiNum != -1) Prim[nfield++] = BaryonField[MetalSiNum];
     if (MetalFeNum != -1) Prim[nfield++] = BaryonField[MetalFeNum];
+    if (MetalOtherNum != -1) Prim[nfield++] = BaryonField[MetalOtherNum];
     if (DustMgNum  != -1) Prim[nfield++] = BaryonField[DustMgNum];
     if (DustFeNum  != -1) Prim[nfield++] = BaryonField[DustFeNum];
     if (DustCNum   != -1) Prim[nfield++] = BaryonField[DustCNum];

@@ -69,14 +69,17 @@ int grid::SetNumberOfColours(void)
   if (SNColourNum      != -1) _nc++;
   if (DustDensityNum   != -1) _nc++;
 
-  /* Species-resolved dust tracking: 5 gas-phase elements + 3 dust species
-     (the bulk and silicate dust sums are not carried as fields). */
+  /* Species-resolved dust tracking: the 6 gas-phase metal reservoirs (C, O,
+     Mg, Si, Fe and the other metals) + 3 dust species (the bulk and
+     silicate dust sums are not carried as fields). The list and its order
+     must match grid::ReturnHydroRKPointers and ReturnOldHydroRKPointers. */
   if (UseDustSpeciesTrack) {
     if (FindField(MetalDensityCarbon,     FieldType, NumberOfBaryonFields) != -1) _nc++;
     if (FindField(MetalDensityOxygen,     FieldType, NumberOfBaryonFields) != -1) _nc++;
     if (FindField(MetalDensityMagnesium,  FieldType, NumberOfBaryonFields) != -1) _nc++;
     if (FindField(MetalDensitySilicon,    FieldType, NumberOfBaryonFields) != -1) _nc++;
     if (FindField(MetalDensityIron,       FieldType, NumberOfBaryonFields) != -1) _nc++;
+    if (FindField(MetalDensityOther,      FieldType, NumberOfBaryonFields) != -1) _nc++;
     if (FindField(DustDensityMgSilicate,  FieldType, NumberOfBaryonFields) != -1) _nc++;
     if (FindField(DustDensityFeSilicate,  FieldType, NumberOfBaryonFields) != -1) _nc++;
     if (FindField(DustDensityCarbonaceous,FieldType, NumberOfBaryonFields) != -1) _nc++;
