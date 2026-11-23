@@ -43,11 +43,12 @@ int HLL_PPM(float **prim, float **priml, float **primr,
 // 					   i, prim[iden][i+NumberOfGhostZones], 
 // 					   priml[iden][i], primr[iden][i]);
 
-  if (ppm(prim, priml, primr, ActiveSize, NEQ_HYDRO) == FAIL) {
+  const int nprim = NEQ_HYDRO - (DualEnergyFormalism ? 1 : 0);
+  if (ppm(prim, priml, primr, ActiveSize, nprim) == FAIL) {
     return FAIL;
   }
 
-  for (int field = 0; field < NEQ_HYDRO; field++) 
+  for (int field = 0; field < nprim; field++)
     for (int i=0; i<ActiveSize+1; i++) {
       priml[field][i] = priml[field][i+1];
       primr[field][i] = primr[field][i+1];

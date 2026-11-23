@@ -36,11 +36,12 @@ int HLL_PPM_MHD(float **prim, float **priml, float **primr,
 {
 
   // compute priml and primr
-  if (ppm(prim, priml, primr, ActiveSize, NEQ_MHD) == FAIL) {
+  const int nprim = NEQ_MHD - (DualEnergyFormalism ? 1 : 0);
+  if (ppm(prim, priml, primr, ActiveSize, nprim) == FAIL) {
     return FAIL;
   }
 
-  for (int field = 0; field < NEQ_MHD; field++) 
+  for (int field = 0; field < nprim; field++)
     for (int i=0; i<ActiveSize+1; i++) {
       priml[field][i] = priml[field][i+1];
       primr[field][i] = primr[field][i+1];
@@ -61,7 +62,7 @@ int HLL_PPM_MHD(float **prim, float **priml, float **primr,
   }
 
   if (NColor > 0) {
-    plm_color(prim, 9, colors, FluxLine[iD], ActiveSize);
+    plm_color(prim, nprim, colors, FluxLine[iD], ActiveSize);
     for (int field = NEQ_MHD+NSpecies; field < NEQ_MHD+NSpecies+NColor; field++) {
       for (int i = 0; i < ActiveSize+1; i++) {
 	FluxLine[field][i] = FluxLine[iD][i]*colors[field-NEQ_MHD-NSpecies][i];

@@ -106,15 +106,18 @@ int grid::SetNumberOfColours(void)
   }
 
 
-  /* Treat these colour (i.e. metal) fields as species fields in the
-     MUSCL solvers. */
-
-  NColor = 0;  
-  NSpecies += _nc;
-
-  
-  if (NSpecies != 0 && MultiSpecies == 0)
-    NoMultiSpeciesButColors = 1;
+  if (UseDustSpeciesTrack && (HydroMethod == HD_RK || HydroMethod == MHD_RK)) {
+    /* Gas metals include the element reservoirs, and grains are outside the
+       gas density. Advect each abundance with the mass flux. Their sum is
+       not a normalization for either the face or the cell. */
+    NColor = NSpecies + _nc;
+    NSpecies = 0;
+  } else {
+    NColor = 0;
+    NSpecies += _nc;
+    if (NSpecies != 0 && MultiSpecies == 0)
+      NoMultiSpeciesButColors = 1;
+  }
 
   if (debug) 
     fprintf(stdout, "grid:SetNumberOfColours: NEQ_HYDRO = %"ISYM", NSpecies = %"ISYM", NColor = %"ISYM"\n", 

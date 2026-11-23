@@ -33,7 +33,8 @@ int HLLD_Zero_MHD(float **prim, float **priml, float **primr,
 
   // compute priml and primr                                                                                
   int iprim;
-  for (int field = 0; field < NEQ_MHD; field++) {
+  const int nprim = NEQ_MHD - (DualEnergyFormalism ? 1 : 0);
+  for (int field = 0; field < nprim; field++) {
     for (int i = 0; i < ActiveSize+1; i++) {
       iprim = i + NumberOfGhostZones - 1;
       priml[field][i] = prim[field][iprim];
@@ -52,9 +53,9 @@ int HLLD_Zero_MHD(float **prim, float **priml, float **primr,
       iprim = i+NumberOfGhostZones-1;
       for (int field = 0; field < NSpecies; field++) {
         if (FluxLine[iD][i] >= 0) {
-          species[field][i] = prim[field+5][iprim  ];
+          species[field][i] = prim[field+nprim][iprim  ];
         } else {
-          species[field][i] = prim[field+5][iprim+1];
+          species[field][i] = prim[field+nprim][iprim+1];
         }
       }
       sum = 0;
@@ -75,9 +76,9 @@ int HLLD_Zero_MHD(float **prim, float **priml, float **primr,
       iprim = i+NumberOfGhostZones-1;
       for (int field = 0; field < NColor; field++) {
         if (FluxLine[iD][i] >= 0) {
-          colors[field][i] = prim[field+5+NSpecies][iprim  ];
+          colors[field][i] = prim[field+nprim+NSpecies][iprim  ];
         } else {
-          colors[field][i] = prim[field+5+NSpecies][iprim+1];
+          colors[field][i] = prim[field+nprim+NSpecies][iprim+1];
         }
       }
       for (int field = 0; field < NColor; field++) {

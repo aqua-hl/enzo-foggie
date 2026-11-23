@@ -59,7 +59,7 @@ int HLL_PLM_MHD(float **prim, float **priml, float **primr,
   }
 
   if (NColor > 0) {
-    plm_color(prim, 9, colors, FluxLine[iD], ActiveSize);
+    plm_color(prim, NEQ_MHD - (DualEnergyFormalism ? 1 : 0), colors, FluxLine[iD], ActiveSize);
     for (int field = NEQ_MHD+NSpecies; field < NEQ_MHD+NSpecies+NColor; field++) {
       for (int i = 0; i < ActiveSize+1; i++) {
 	FluxLine[field][i] = FluxLine[iD][i]*colors[field-NEQ_MHD-NSpecies][i];

@@ -2184,6 +2184,8 @@ int ReadParameterFile(FILE *fptr, TopGridData &MetaData, float *Initialdt)
 // 	      MetaData.RightFaceBoundaryCondition[i]);
 
   if (UseCUDA) {
+    if ((HydroMethod == HD_RK || HydroMethod == MHD_RK) && UseDustSpeciesTrack)
+      ENZO_FAIL("Species-resolved dust transport with RK requires UseCUDA = 0.");
     LoadBalancing = 0; // Should explore how LoadBalancing = 1 gives problems with CUDA
 #ifndef ECUDA
     printf("This executable was compiled without CUDA support.\n");

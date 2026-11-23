@@ -73,7 +73,9 @@ int grid::UpdatePrim(float **dU, float c1, float c2)
   //##### Want to mix species and colors for renormalization?  Normally you don't
   int NSpecies_renorm;
 
-  if (MixSpeciesAndColors) 
+  if (NColor > 0)
+    NSpecies_renorm = NSpecies;
+  else if (MixSpeciesAndColors)
     NSpecies_renorm = NSpecies+NColor;
   else  if (NoMultiSpeciesButColors) {
     NSpecies_renorm = NSpecies;
@@ -276,6 +278,14 @@ int grid::UpdatePrim(float **dU, float c1, float c2)
 	  //return FAIL;
 	}
 	
+        /* dU carries colour density. Store a fraction until the final
+           conversion to density, which also restores the ghost cells. */
+        for (field = NEQ_HYDRO+NSpecies; field < NEQ_HYDRO+NSpecies+NColor; field++) {
+          const float colour = c1*OldPrim[field][igrid] +
+            (1-c1)*rho*Prim[field][igrid] + c2*dU[field][n];
+          Prim[field][igrid] = colour / D_new;
+        }
+
 	BaryonField[DensNum][igrid] = D_new;
 	BaryonField[Vel1Num][igrid] = vx;
 	BaryonField[Vel2Num][igrid] = vy;

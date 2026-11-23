@@ -55,6 +55,28 @@ int grid::SaveSubgridFluxes(fluxes *SubgridFluxes[], int NumberOfSubgrids,
     }
   }
   
+  const int neq = (HydroMethod == MHD_RK) ? NEQ_MHD : NEQ_HYDRO;
+  const int nflux = neq + (NColor > 0 ? NSpecies + NColor : 0);
+  int fieldNumber[nflux];
+  if (NColor > 0) {
+    /* The solver and dump can have different field orders. For example,
+       electron density has no RK flux, and old dumps append Other last. */
+    float *prim[nflux];
+    if (this->ReturnHydroRKPointers(prim, false) == FAIL)
+      return FAIL;
+    for (int eq = 0; eq < nflux; eq++) {
+      int field = 0;
+      while (field < NumberOfBaryonFields && BaryonField[field] != prim[eq])
+        field++;
+      if (field == NumberOfBaryonFields)
+        ENZO_FAIL("Missing baryon field for RK flux.");
+      fieldNumber[eq] = field;
+    }
+  } else {
+    for (int eq = 0; eq < neq; eq++)
+      fieldNumber[eq] = eq;
+  }
+
   /* Start: subgrid left flux start index relative to this grid
      End: subgrid left flux start index relative to this grid */
 
@@ -91,7 +113,8 @@ int grid::SaveSubgridFluxes(fluxes *SubgridFluxes[], int NumberOfSubgrids,
     }
     
     FLOAT dtdx = dtFixed/(a*CellWidth[flux][0]);
-    for (int field = 0; field < NEQ_HYDRO; field++) {
+    for (int field = 0; field < nflux; field++) {
+      const int baryon = fieldNumber[field];
       for (int k = Start[2]; k <= End[2]; k++) {
 	for (int j = Start[1]; j <= End[1]; j++) {
 	  for (int i = Start[0]; i <= End[0]; i++) {
@@ -99,9 +122,9 @@ int grid::SaveSubgridFluxes(fluxes *SubgridFluxes[], int NumberOfSubgrids,
 	      (i-Start[0]);
 	    igridflux = i + j * (Activesize[0] + 1) +
 	      k * (Activesize[0] + 1) * (Activesize[1] + 1);
-	    SubgridFluxes[subgrid]->LeftFluxes[field][flux][iflux] += 
+	    SubgridFluxes[subgrid]->LeftFluxes[baryon][flux][iflux] +=
 	      fluxcoef*Flux3D[field][igridflux]*dtdx;
-	    SubgridFluxes[subgrid]->RightFluxes[field][flux][iflux] += 
+	    SubgridFluxes[subgrid]->RightFluxes[baryon][flux][iflux] +=
 	      fluxcoef*Flux3D[field][igridflux+Offset]*dtdx;
 	    //printf("iflux=%"ISYM", igridflux=%"ISYM", offset=%"ISYM"\n",
 	    //   iflux, igridflux, Offset);

@@ -224,7 +224,7 @@ int grid::MHD3D(float **Prim, float **dU, float dt,
 	    ifluxp1 = i + (Xactivesize + 1)*(j+(k + 1)*(Yactivesize + 1));
 	    i1 = i + GridStartIndex[0];
 	    xc = CellLeftEdge[0][i1] + 0.5*CellWidth[0][i1];
-	    for (int field = 0; field < NEQ_HYDRO+NSpecies+NColor; field++) {
+	    for (int field = 0; field < NEQ_MHD+NSpecies+NColor; field++) {
               dU[field][n] -= (Flux3D[field][ifluxp1] - Flux3D[field][iflux])*dtdx/xc;
             }
           }
